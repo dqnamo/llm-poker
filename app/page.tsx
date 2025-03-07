@@ -1,101 +1,94 @@
 import Image from "next/image";
+import Player from "./components/Player";
+import PlayerItems from "./components/PlayerItems";
+import Card from "./components/Card";
 
 export default function Home() {
+  // Example community cards (you can make this dynamic later)
+  const communityCards = ["A♠", "K♥", "Q♦", "J♣", "10♠"];
+  
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="flex flex-col w-full max-w-5xl mx-auto py-5 sm:py-10 px-4 font-barlow">
+      <div className="flex flex-col gap-2 w-full sm:w-max mx-auto">
+        <h1 className="text-xl sm:text-2xl uppercase font-medium font-bebas-neue text-center mx-auto">LLM Poker</h1>
+        <p className="text-center text-xs sm:text-sm max-w-md mx-auto font-barlow">
+          LLM Poker is a benchmark for evaluating the reasoning capabilities of LLMs by playing poker.
+        </p>
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* Poker table with 6 players */}
+      <div className="relative w-full max-w-5xl mx-auto mt-5 sm:mt-10 aspect-[6/3]">
+        {/* Poker table */}
+        <div className="absolute inset-[15%] rounded-full bg-gradient-to-b from-green-800 to-green-900 border-8 sm:border-16 border-neutral-900 flex items-center justify-center shadow-[inset_0_0_30px_rgba(0,255,0,0.3)]">
+          {/* Table logo text */}
+          <div className="absolute text-2xl sm:text-4xl font-bold tracking-widest text-green-700 opacity-30 select-none rotate-0 font-bebas-neue">
+            LLM POKER
+          </div>
+          
+          {/* Center area for community cards and pot */}
+          <div className="w-[70%] h-[40%] rounded flex flex-col items-center justify-center">
+            <div className="text-xs sm:text-sm md:text-base text-white mb-2">Community Cards</div>
+            <div className="flex gap-1 sm:gap-2">
+              {communityCards.map((card, index) => (
+                <Card key={index} value={card} className="w-8 h-11 sm:w-10 sm:h-14" />
+              ))}
+            </div>
+            <div className="text-xs sm:text-sm md:text-base text-white mt-2 sm:mt-3">Pot: $0</div>
+          </div>
+          
+          {/* Player item areas on the table */}
+          <PlayerItems position="top" playerNumber={1} betAmount={25} />
+          <PlayerItems position="top-right" playerNumber={2} betAmount={50} />
+          <PlayerItems position="bottom-right" playerNumber={3} betAmount={2100} />
+          <PlayerItems position="bottom" playerNumber={4} betAmount={75} />
+          <PlayerItems position="bottom-left" playerNumber={5} betAmount={0} />
+          <PlayerItems position="top-left" playerNumber={6} betAmount={200} />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        
+        {/* Player positions */}
+        <Player 
+          position="top" 
+          name="Google Gemini 1.5 Flash" 
+          money={1000} 
+          cards={["A♠", "K♥"]} 
+          status="Betting" 
+        />
+        <Player 
+          position="top-right" 
+          name="OpenAI GPT-4.5" 
+          money={1000} 
+          cards={["A♠", "K♥"]} 
+          status="Betting" 
+        />
+        <Player 
+          position="bottom-right" 
+          name="OpenAI GPT-4o" 
+          money={1000} 
+          cards={["A♠", "K♥"]} 
+          status="Betting" 
+        />
+        <Player 
+          position="bottom" 
+          name="Anthropic Claude 3.5 Sonnet" 
+          money={1000} 
+          cards={["A♠", "K♥"]} 
+          status="Betting" 
+        />
+        <Player 
+          position="bottom-left" 
+          name="Anthropic Claude 3.7 Sonnet" 
+          money={1000} 
+          cards={["A♠", "K♥"]} 
+          status="Betting" 
+        />
+        <Player 
+          position="top-left" 
+          name="Google Gemini 1.5 Pro" 
+          money={1000} 
+          cards={["A♠", "K♥"]} 
+          status="Betting" 
+        />
+      </div>
     </div>
   );
 }
