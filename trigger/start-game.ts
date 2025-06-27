@@ -89,6 +89,18 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
     }
   }
 
+  
+
+  // start the first betting round
+
+  const bettingRoundId = id();
+  const bettingRound = await db.transact(db.tx.bettingRounds[bettingRoundId].update({
+    type: "preflop",
+    pot: 15,
+    createdAt: DateTime.now().toISO(),
+  }).link({ game: gameId, gameRound: roundId }))
+  logger.log("Betting round created", { bettingRound });
+
   const smallBlindHand = Object.values(hands).find((hand) => hand.playerId === smallBlindPlayer);
 
   await db.transact(db.tx.actions[id()].update({
@@ -96,7 +108,7 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
     amount: 5,
     reasoning: "Posted the small bilnd",
     createdAt: DateTime.now().toISO(),
-  }).link({game: gameId, gameRound: roundId, player: smallBlindPlayer, hand: smallBlindHand?.id}))
+  }).link({game: gameId, gameRound: roundId, player: smallBlindPlayer, hand: smallBlindHand?.id, bettingRound: bettingRoundId}))
 
   
   if(smallBlindHand) {
@@ -115,7 +127,7 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
     amount: 10,
     reasoning: "Posted the big blind",
     createdAt: DateTime.now().toISO(),
-  }).link({game: gameId, gameRound: roundId, player: bigBlindPlayer, hand: bigBlindHand?.id}))
+  }).link({game: gameId, gameRound: roundId, player: bigBlindPlayer, hand: bigBlindHand?.id, bettingRound: bettingRoundId}))
 
   if(bigBlindHand) {
     const newStack = players[bigBlindPlayer].stack - 10;
@@ -126,16 +138,6 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
     players[bigBlindHand?.playerId].stack = newStack;
     hands[bigBlindHand?.id].amount = 10;
   }
-
-  // start the first betting round
-
-  const bettingRoundId = id();
-  const bettingRound = await db.transact(db.tx.bettingRounds[bettingRoundId].update({
-    type: "preflop",
-    pot: 15,
-    createdAt: DateTime.now().toISO(),
-  }).link({ game: gameId, gameRound: roundId }))
-  logger.log("Betting round created", { bettingRound });
 
   const firstBettingRoundResult = await performBettingRound({ context, hightestBet: 10, pot: 15, hands, gameId, roundId, bettingRoundId, players, startingPlayer: playerToStartPreFlopPosition });
   console.log("firstBettingRoundResult", firstBettingRoundResult);
