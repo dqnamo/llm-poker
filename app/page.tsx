@@ -42,6 +42,7 @@ export default function Home() {
     }
   });
 
+
   return (
     <div className="flex flex-col h-dvh p-10">
       <div className="text-white font-geist-mono grid grid-cols-3 gap-8 max-w-7xl mx-auto w-full">
@@ -105,8 +106,10 @@ export default function Home() {
 const Player = ({player, cards, active, lastAction,data}: {player: InstaQLEntity<AppSchema, "players">, cards?: string[], active?: boolean, lastAction?: InstaQLEntity<AppSchema, "actions">, data: any}) => {
   const [showThoughts, setShowThoughts] = useState(false);
 
+  const lastActionFolded = lastAction?.type === "fold";
+
   return (
-    <div className={`bg-neutral-900 p-px overflow-hidden relative ${active ? "border-animation" : ""} h-full flex flex-col`}>
+    <div className={`bg-neutral-900 p-px overflow-hidden relative ${active ? "border-animation" : ""} h-full flex flex-col ${lastActionFolded ? "opacity-50" : ""}`}>
       <div className={`relative bg-neutral-950 flex flex-col divide-y divide-neutral-900 flex-1`}>
         <div className="flex flex-row items-start gap-4 justify-between p-4 h-full">
           <div className="flex flex-col">
@@ -130,33 +133,43 @@ const Player = ({player, cards, active, lastAction,data}: {player: InstaQLEntity
           </div>
         </div>
         <div className="flex flex-col p-4 shrink-0 gap-1">
-          <div className="text-xs  text-neutral-200 font-mono uppercase font-medium">{lastAction?.type}</div>
+        {lastAction?.reasoning && (lastAction as any)?.gameRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.id ? (
+          <>
+          {(lastAction.type !== 'bet' || (lastAction as any)?.bettingRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds[data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds.length - 1]?.id) && (
+            <>
+            <div className="text-xs  text-neutral-200 font-mono uppercase font-medium">{lastAction?.type}</div>
+          
 
-          {Number(lastAction?.amount) > 0 && (
-            <div className="flex flex-row items-center gap-1">
-              <div className="text-lg text-teal-500">¤</div>
-              <div className="text-xs text-neutral-400">
-                <NumberFlow
-                  value={lastAction?.amount ?? 0}
-                />
-              </div>
-            </div>
-          )}
-          {lastAction?.reasoning && (lastAction as any)?.gameRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.id && (
-            <div className="flex flex-col gap-2">
-              <button 
-                onClick={() => setShowThoughts(!showThoughts)}
-                className="text-xs text-neutral-500 hover:text-neutral-300 cursor-pointer text-left"
-              >
-                {showThoughts ? 'Hide Thoughts' : 'Show Thoughts'}
-              </button>
-              {showThoughts && (
-                <div className="text-xs text-neutral-400 bg-neutral-900 p-2 rounded border border-neutral-800">
-                  {lastAction.reasoning}
+            {Number(lastAction?.amount) > 0 && (
+              <div className="flex flex-row items-center gap-1">
+                <div className="text-lg text-teal-500">¤</div>
+                <div className="text-xs text-neutral-400">
+                  <NumberFlow
+                    value={lastAction?.amount ?? 0}
+                  />
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+            </>
           )}
+          
+          <div className="flex flex-col gap-2">
+            <button 
+              onClick={() => setShowThoughts(!showThoughts)}
+              className="text-xs text-neutral-500 hover:text-neutral-300 cursor-pointer text-left"
+            >
+              {showThoughts ? 'Hide Thoughts' : 'Show Thoughts'}
+            </button>
+            {showThoughts && (
+              <div className="text-xs text-neutral-400 bg-neutral-900 p-2 rounded border border-neutral-800">
+                {lastAction.reasoning}
+              </div>
+            )}
+          </div>
+          </>
+        ) : (
+          <p className="text-xs text-neutral-500">Hasn't acted yet</p>
+        )}
         </div>
       </div>
     </div>

@@ -29,6 +29,9 @@ function shuffle<T>(array: T[]): void {
 export const performRound = async ({ gameId, players, deck, roundNumber = 1, buttonPosition = 0 }: { gameId: string, players: { [key: string]: { id: string, cards: string[], stack: number, model: string } }, deck: string[], roundNumber?: number, buttonPosition?: number }) => {
   const hands: { [key: string]: { id: string, playerId: string, cards: string[], folded: boolean, amount: number, acted: boolean, stack: number } } = {};
 
+  // wait 2 seconds
+  await wait.for({ seconds: 2 });
+
   // start round
   const roundId = id();
   const round = await db.transact(db.tx.gameRounds[roundId].update({
@@ -46,7 +49,7 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
   const bigBlindPlayer = Object.keys(players)[(buttonPosition + 2) % 6];
 
   const playerToStartPreFlopPosition = (buttonPosition + 3) % 6;
-  const playerToStartPostFlopPosition = (buttonPosition + 4) % 6;
+  const playerToStartPostFlopPosition = (buttonPosition + 1) % 6;
 
   await db.transact(db.tx.transactions[id()].update({
     amount: 5,
@@ -126,9 +129,6 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
 
   // start the first betting round
 
-  // wait 2 seconds
-  await wait.for({ seconds: 3 });
-
   const bettingRoundId = id();
   const bettingRound = await db.transact(db.tx.bettingRounds[bettingRoundId].update({
     type: "preflop",
@@ -165,6 +165,12 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
     }))
 
     players[winner.playerId].stack = players[winner.playerId].stack + pot;
+
+    // update the game
+    await db.transact(db.tx.games[gameId].update({
+      currentActivePosition: null,
+    }))
+
     return;
   }
 
@@ -215,6 +221,12 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
     }))
 
     players[winner.playerId].stack = players[winner.playerId].stack + pot;
+
+    // update the game
+    await db.transact(db.tx.games[gameId].update({
+      currentActivePosition: null,
+    }))
+
     return;
   }
 
@@ -265,6 +277,12 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
     }))
 
     players[winner.playerId].stack = players[winner.playerId].stack + pot;
+
+    // update the game
+    await db.transact(db.tx.games[gameId].update({
+      currentActivePosition: null,
+    }))
+
     return;
   }
 
@@ -315,6 +333,12 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
     }))
 
     players[winner.playerId].stack = players[winner.playerId].stack + pot;
+
+    // update the game
+    await db.transact(db.tx.games[gameId].update({
+      currentActivePosition: null,
+    }))
+
     return;
   }
 
@@ -421,7 +445,7 @@ export const startGame = task({
     }
 
     // Play the first round
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 1; i++) {
       const buttonPosition = i % 6;
       const activePosition = (buttonPosition + 4) % 6;
 
