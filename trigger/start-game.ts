@@ -447,7 +447,7 @@ export const startGame = task({
     }
 
     // Play the first round
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < 3; i++) {
       const buttonPosition = i % 6;
       const activePosition = (buttonPosition + 4) % 6;
 
