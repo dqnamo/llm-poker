@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { id, i, init, InstaQLEntity } from "@instantdb/react";
 import schema, { AppSchema } from "@/instant.schema";
 import NumberFlow from '@number-flow/react'
-import { motion } from "motion/react"
+import { motion, Reorder } from "motion/react"
+import { CaretDown, CaretUp } from "@phosphor-icons/react";
 
 // ID for app: LLM Poker
 const APP_ID = "9b591b1a-b90d-4eff-ba00-834a5d4fd311";
@@ -30,7 +31,8 @@ export default function Home() {
         actions: {
           gameRound: {},
           bettingRound: {}
-        }
+        },
+        transactions: {}
       },
       gameRounds: {
         bettingRounds: {},
@@ -92,7 +94,7 @@ export default function Home() {
             <p className="text-xs text-neutral-500">How the models are doing</p>
           </div>
 
-          <Rankings />
+          <Rankings players={data?.games[0].players} />
         </div>
 
         {/* <div className="flex flex-col border border-neutral-900 relative col-span-3 h-40">
@@ -213,28 +215,75 @@ const CornerBorders = () => {
   );
 };
 
-const RankingItem = () => {
+const RankingItem = ({player}: {player: any}) => {
   return (
     <div className="flex flex-col p-2 px-4">
       <div className="flex flex-row items-center gap-1 justify-between">
-        <div className="text-xs font-semibold">GPT-3.5</div>
+        <div className="text-xs font-semibold">{player.name}</div>
         <div className="flex flex-row items-center gap-1">
-          <div className="text-lg text-teal-500">¤</div>
-          <div className="text-xs text-neutral-400">1000</div>
+          { player.totalWinnings > 0 && (
+            <>
+              <CaretUp size={16} className="text-teal-500" />
+              <div className="text-xs text-neutral-400">
+                <NumberFlow
+                  value={player.totalWinnings ?? 0}
+                />
+              </div>
+            </>
+          )}
+          { player.totalWinnings < 0 && (
+            <>
+              <CaretDown size={16} className="text-red-500" />
+              <div className="text-xs text-neutral-400">
+                <NumberFlow
+                  value={player.totalWinnings ?? 0}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-const Rankings = () => {
+type PlayerWithRelations = InstaQLEntity<AppSchema, "players"> & {
+  transactions: InstaQLEntity<AppSchema, "transactions">[];
+}
+
+type PlayerWithWinnings = PlayerWithRelations & { totalWinnings: number };
+
+const Rankings = ({players}: {players?: PlayerWithRelations[]}) => {
+  const [rankedPlayers, setRankedPlayers] = useState<PlayerWithWinnings[]>([]);
+
+  useEffect(() => {
+    if (players) {
+      const sortedPlayers = players.map(player => {
+        const totalWinnings = player.transactions.reduce((acc, tx) => {
+          return acc + (tx.credit ? tx.amount : -tx.amount);
+        }, 0);
+        return { ...player, totalWinnings };
+      }).sort((a, b) => b.totalWinnings - a.totalWinnings);
+      setRankedPlayers(sortedPlayers);
+    }
+  }, [players]);
+
+
+  if (!players) {
+    return (
+      <div className="flex flex-col divide-y divide-neutral-900 border-b border-neutral-900">
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col divide-y divide-neutral-900 border-b border-neutral-900">
-      <RankingItem />
-      <RankingItem />
-      <RankingItem />
-      <RankingItem />
-    </div>
+    <Reorder.Group as="ol" axis="y" values={rankedPlayers} onReorder={setRankedPlayers} className="flex flex-col divide-y divide-neutral-900 border-b border-neutral-900">
+      {rankedPlayers.map(player => (
+        <Reorder.Item key={player.id} value={player}>
+          <RankingItem player={player} />
+        </Reorder.Item>
+      ))}
+    </Reorder.Group>
   );
 };
 
