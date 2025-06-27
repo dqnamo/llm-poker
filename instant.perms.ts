@@ -19,6 +19,62 @@ const rules = {
    *   bind: ["isOwner", "auth.id != null && auth.id == data.ownerId"],
    * },
    */
+  games: {
+    allow: {
+      view: "true",
+      create: "false",
+      update: "false",
+      delete: "false",
+    },
+  },
+  players: {
+    allow: {
+      view: "true",
+      create: "false",
+      update: "false",
+      delete: "false",
+    },
+  },
+  gameRounds: {
+    allow: {
+      view: "true",
+      create: "false",
+      update: "false",
+      delete: "false",
+    },
+  },
+  bettingRounds: {
+    allow: {
+      view: "true",
+      create: "false",
+      update: "false",
+      delete: "false",
+    },
+  },
+  hands: {
+    allow: {
+      view: "true",
+      create: "false",
+      update: "false",
+      delete: "false",
+    },
+  },
+  actions: {
+    allow: {
+      view: "true",
+      create: "false",
+      update: "false",
+      delete: "false",
+    },
+  },
+  transactions: {
+    allow: {
+      view: "true",
+      create: "false",
+      update: "false",
+      delete: "false",
+    },
+  },
 } satisfies InstantRules;
 
 export default rules;

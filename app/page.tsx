@@ -126,14 +126,14 @@ export default function Home() {
   );
 }
 
-const Player = ({player, cards, active, lastAction,data}: {player: InstaQLEntity<AppSchema, "players">, cards?: string[], active?: boolean, lastAction?: InstaQLEntity<AppSchema, "actions">, data: any}) => {
+const Player = ({player, cards, active, lastAction,data}: {player: InstaQLEntity<AppSchema, "players">, cards?: string[], active?: boolean, lastAction?: InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>, data: any}) => {
   const [showThoughts, setShowThoughts] = useState(false);
 
   if (!player) {
     return <LoadingPlayer />;
   }
 
-  const lastActionFolded = lastAction?.type === "fold";
+  const lastActionFolded = lastAction?.type === "fold" && lastAction?.gameRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.id;
 
   return (
     <div className={`bg-neutral-900 p-px overflow-hidden relative ${active ? "border-animation" : ""} h-full flex flex-col ${lastActionFolded ? "opacity-50" : ""}`}>
