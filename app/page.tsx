@@ -48,7 +48,7 @@ export default function Home() {
       <div className="text-white font-geist-mono grid grid-cols-3 gap-8 max-w-7xl mx-auto w-full">
 
         <div className="flex flex-row items-center justify-between col-span-3">
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-1">
             <h1 className="text-sm font-semibold uppercase">LLM Poker</h1>
             <p className="text-xs text-neutral-500 max-w-sm">A simple 6 handed cash poker game to test the reasoning capabilities of LLMs.</p>
           </div>
