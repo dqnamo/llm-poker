@@ -1,7 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  --font-bebas-neue: var(--font-bebas-neue);
-  --font-barlow: var(--font-barlow);
-  --font-space-grotesk: var(--font-space-grotesk);
+  --font-geist-mono: var(--font-geist-mono);
+}
+
+.border-animation:before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(0deg);
+  width: 200%;
+  height: 2000%;
+  transform-origin: center;
+  background-image: conic-gradient(
+    transparent 20deg,
+    var(--color-neutral-500) 80deg,
+    var(--color-neutral-400) 100deg,
+    transparent 160deg
+  );
+  animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+  100% {
+    transform: translate(-50%, -50%) rotate(-360deg);
+  }
 }

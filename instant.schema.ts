@@ -13,32 +13,91 @@ const _schema = i.schema({
     }),
     games: i.entity({
       totalRounds: i.number(),
+      deck: i.json(),
+      buttonPosition: i.number(),
+      createdAt: i.date().indexed(),
+      currentActivePosition: i.number().optional(),
     }),
     players: i.entity({
       name: i.string(),
       stack: i.number(),
       status: i.string(),
-      cards: i.json(),
+      createdAt: i.date(),
+      model: i.string(),
+    }),
+    gameRounds: i.entity({
+      roundNumber: i.number(),
+      communityCards: i.json().optional(),
+      pot: i.number().optional(),
+      createdAt: i.date(),
+    }),
+    bettingRounds: i.entity({
+      type: i.string(),
+      pot: i.number(),
+      createdAt: i.date(),
     }),
     hands: i.entity({
-      roundNumber: i.number(),
-      communityCards: i.json(),
-      pot: i.number(),
+      cards: i.json(),
+      folded: i.boolean(),
+      createdAt: i.date(),
+    }),
+    actions: i.entity({
+      type: i.string(),
+      amount: i.number(),
+      reasoning: i.string(),
+      createdAt: i.date(),
+    }),
+    transactions: i.entity({
+      amount: i.number(),
+      credit: i.boolean().indexed(),
+      createdAt: i.date(),
     }),
   },
   links: {
     gameRound: {
-      forward: { on: "games", has: "one", label: "hand" },
-      reverse: { on: "hands", has: "many", label: "game" }
+      forward: { on: "games", has: "many", label: "gameRounds" },
+      reverse: { on: "gameRounds", has: "one", label: "game" }
     },
     gamePlayer: {
-      forward: { on: "games", has: "many", label: "player" },
-      reverse: { on: "players", has: "many", label: "game" }
+      forward: { on: "games", has: "many", label: "players" },
+      reverse: { on: "players", has: "one", label: "game" }
     },
     playerHand: {
       forward: { on: "players", has: "one", label: "hand" },
       reverse: { on: "hands", has: "many", label: "player" }
     },
+    roundHand: {
+      forward: { on: "gameRounds", has: "many", label: "hands" },
+      reverse: { on: "hands", has: "one", label: "gameRound" }
+    },
+    actionPlayer: {
+      forward: { on: "actions", has: "one", label: "player" },
+      reverse: { on: "players", has: "many", label: "actions" }
+    },
+    actionGameRound: {
+      forward: { on: "actions", has: "one", label: "gameRound" },
+      reverse: { on: "gameRounds", has: "many", label: "actions" }
+    },
+    actionHand: {
+      forward: { on: "actions", has: "one", label: "hand" },
+      reverse: { on: "hands", has: "many", label: "actions" }
+    },
+    actionBettingRound: {
+      forward: { on: "actions", has: "one", label: "bettingRound" },
+      reverse: { on: "bettingRounds", has: "many", label: "actions" }
+    },
+    bettingRoundGameRound: {
+      forward: { on: "bettingRounds", has: "one", label: "gameRound" },
+      reverse: { on: "gameRounds", has: "many", label: "bettingRounds" }
+    },
+    transactionPlayer: {
+      forward: { on: "transactions", has: "one", label: "player" },
+      reverse: { on: "players", has: "many", label: "transactions" }
+    },
+    transactionGameRound: {
+      forward: { on: "transactions", has: "one", label: "gameRound" },
+      reverse: { on: "gameRounds", has: "many", label: "transactions" }
+    }
   },
   rooms: {},
 });
