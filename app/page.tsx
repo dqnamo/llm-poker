@@ -155,7 +155,7 @@ const Player = ({player, cards, active, lastAction,data}: {player: InstaQLEntity
             {/* get the last hand for the player */}
             {cards && (
               cards.map((card) => (
-                <Card key={card} value={card} className="w-8 h-11 sm:w-8 sm:h-11" />
+                <Card value={card} className="w-8 h-11 sm:w-8 sm:h-11" />
               ))
             )}
           </div>
@@ -222,7 +222,7 @@ const Table = ({cards, pot}: {cards: string[], pot: number}) => {
 
         <div className="grid grid-cols-5 gap-4 mt-4">
           {cards && cards.map((card) => (
-            <Card key={card} value={card} className="w-8 h-11 sm:w-10 sm:h-14" />
+            <Card value={card} className="w-8 h-11 sm:w-10 sm:h-14" />
           ))}
         </div>
       </div>
