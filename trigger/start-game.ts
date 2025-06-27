@@ -443,7 +443,7 @@ export const startGame = task({
         createdAt: DateTime.now().toISO(),
       }).link({ game: gameId }))
       logger.log("Player created", { player });
-      players[playerId] = { id: playerId, cards: [], stack: 2000, model: models[i] }
+      players[playerId] = { id: playerId, cards: [], stack: Number(process.env.INITIAL_STACK) || 2000, model: models[i] }
     }
 
     // Play the first round

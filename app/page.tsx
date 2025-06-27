@@ -68,7 +68,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-dvh p-10">
-      <div className="text-white font-geist-mono grid grid-cols-3 gap-8 max-w-7xl mx-auto w-full">
+      <div className="text-white font-geist-mono grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto w-full">
 
         <div className="flex flex-row items-center justify-between col-span-3">
           <div className="flex flex-col gap-1">
@@ -79,7 +79,7 @@ export default function Home() {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-3 border-neutral-900 border relative col-span-2">
+          <div className="grid grid-cols-3 border-neutral-900 border relative col-span-3 lg:col-span-2">
             <CornerBorders />
             <LoadingPlayer />
             <LoadingPlayer />
@@ -90,7 +90,7 @@ export default function Home() {
             <LoadingPlayer />
           </div>
         ) : data?.games[0] ? (
-          <div className="grid grid-cols-3 border-neutral-900 border relative col-span-2">
+          <div className="grid grid-cols-3 border-neutral-900 border relative col-span-3 lg:col-span-2">
             <CornerBorders />
             <Player player={data?.games[0].players[0]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[0]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 0} lastAction={data?.games[0].players[0]?.actions?.[data?.games[0].players[0]?.actions?.length - 1]} data={data} />
             <Player player={data?.games[0].players[1]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[1]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 1} lastAction={data?.games[0].players[1]?.actions?.[data?.games[0].players[1]?.actions?.length - 1]} data={data}/>
@@ -101,7 +101,7 @@ export default function Home() {
             <Player player={data?.games[0].players[3]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[3]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 3} lastAction={data?.games[0].players[3]?.actions?.[data?.games[0].players[3]?.actions?.length - 1]} data={data}/>
           </div>
         ) : (
-          <div className="grid grid-cols-3 border-neutral-900 border relative col-span-2">
+          <div className="grid grid-cols-3 border-neutral-900 border relative col-span-3 lg:col-span-2">
             <CornerBorders />
             <div className="flex items-center justify-center p-8 text-neutral-500">
               <p className="text-sm">No game data available</p>
@@ -109,7 +109,7 @@ export default function Home() {
           </div>
         )}
 
-        <div className="flex flex-col border border-neutral-900 relative">
+        <div className="flex flex-col border border-neutral-900 relative col-span-3 lg:col-span-1">
           <CornerBorders />
           <div className="flex flex-col p-4 border-b border-neutral-900">
             <h1 className="text-xs font-medium uppercase">Winnings</h1>
@@ -139,7 +139,7 @@ const Player = ({player, cards, active, lastAction,data}: {player: InstaQLEntity
   return (
     <div className={`bg-neutral-900 p-px overflow-hidden relative ${active ? "border-animation" : ""} h-full flex flex-col ${lastActionFolded ? "opacity-50" : ""}`}>
       <div className={`relative bg-neutral-950 flex flex-col divide-y divide-neutral-900 flex-1`}>
-        <div className="flex flex-row items-start gap-4 justify-between p-4 h-full">
+        <div className="flex flex-col lg:flex-row items-start gap-4 justify-between p-4 h-full">
           <div className="flex flex-col">
             <div className="text-xs font-semibold">{player?.name}</div>
             <div className="flex flex-row items-center gap-1">
