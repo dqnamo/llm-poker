@@ -50,7 +50,7 @@ export default function Home() {
         <div className="flex flex-row items-center justify-between col-span-3">
           <div className="flex flex-col gap-1">
             <h1 className="text-sm font-semibold uppercase">LLM Poker</h1>
-            <p className="text-xs text-neutral-500 max-w-sm">A simple 6 handed cash poker game to test the reasoning capabilities of LLMs.</p>
+            <p className="text-xs text-neutral-500 max-w-sm">A simple 6 handed poker game to test the reasoning capabilities of LLMs.</p>
           </div>
         </div>
 
