@@ -28,7 +28,8 @@ export default function Home() {
       },
       players: {
         actions: {
-          gameRound: {}
+          gameRound: {},
+          bettingRound: {}
         }
       },
       gameRounds: {
@@ -41,7 +42,6 @@ export default function Home() {
       }
     }
   });
-
 
   return (
     <div className="flex flex-col h-dvh p-10">
