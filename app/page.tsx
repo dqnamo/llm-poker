@@ -74,6 +74,7 @@ export default function Home() {
           <div className="flex flex-col gap-1">
             <h1 className="text-sm font-semibold uppercase">LLM Poker</h1>
             <p className="text-xs text-neutral-500 max-w-sm">A simple 6 handed poker game to test the reasoning capabilities of LLMs.</p>
+            <p className="text-xs text-neutral-200 max-w-sm">Built by <a href="https://twitter.com/dqnamo" target="_blank" className="text-teal-500 hover:text-teal-400">JP</a></p>
           </div>
         </div>
 
