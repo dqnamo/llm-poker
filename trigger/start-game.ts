@@ -437,7 +437,7 @@ export const startGame = task({
       const playerId = id();
       const player = await db.transact(db.tx.players[playerId].update({
         name: models[i],
-        stack: 2000,
+        stack: Number(process.env.INITIAL_STACK) || 2000,
         status: "active",
         model: models[i],
         createdAt: DateTime.now().toISO(),
@@ -447,7 +447,7 @@ export const startGame = task({
     }
 
     // Play the first round
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < Number(process.env.HANDS_PER_GAME) || 50; i++) {
       const buttonPosition = i % 6;
       const activePosition = (buttonPosition + 4) % 6;
       
