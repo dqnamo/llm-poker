@@ -6,7 +6,7 @@ import { id, i, init, InstaQLEntity } from "@instantdb/react";
 import schema, { AppSchema } from "@/instant.schema";
 import NumberFlow from '@number-flow/react'
 import { motion, Reorder } from "motion/react"
-import { CaretDown, CaretUp } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, CircleNotch } from "@phosphor-icons/react";
 
 // ID for app: LLM Poker
 const APP_ID = "9b591b1a-b90d-4eff-ba00-834a5d4fd311";
@@ -44,6 +44,27 @@ export default function Home() {
       }
     }
   });
+
+  if(isLoading) {
+    return (
+      <div className="flex flex-col h-dvh p-10 items-center justify-center">
+        <div className="text-white font-geist-mono w-max p-4 flex flex-col items-center gap-2">
+        <CircleNotch size={16} className="animate-spin" />
+        <p className="text-xs text-neutral-500 font-semibold uppercase">Loading</p>
+        </div>
+      </div>
+    )
+  }
+
+  if(error) {
+    return (
+      <div className="flex flex-col h-dvh p-10 items-center justify-center">
+        <div className="text-white font-geist-mono w-max p-4 flex flex-col items-center gap-2">
+          <p className="text-xs text-neutral-500 font-semibold uppercase">Error</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-dvh p-10">
@@ -108,6 +129,10 @@ export default function Home() {
 const Player = ({player, cards, active, lastAction,data}: {player: InstaQLEntity<AppSchema, "players">, cards?: string[], active?: boolean, lastAction?: InstaQLEntity<AppSchema, "actions">, data: any}) => {
   const [showThoughts, setShowThoughts] = useState(false);
 
+  if (!player) {
+    return <LoadingPlayer />;
+  }
+
   const lastActionFolded = lastAction?.type === "fold";
 
   return (
@@ -120,7 +145,7 @@ const Player = ({player, cards, active, lastAction,data}: {player: InstaQLEntity
               <div className="text-lg text-teal-500">¤</div>
               <div className="text-xs text-neutral-400">
                 <NumberFlow
-                  value={player.stack ?? 0}
+                  value={player?.stack ?? 0}
                 />
               </div>
             </div>
