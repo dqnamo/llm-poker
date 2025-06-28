@@ -86,6 +86,8 @@ export const startGame = task({
         await db.transact(db.tx.players[player.id].update({
           stack: Number(process.env.INITIAL_STACK) || 2000,
         }))
+
+        players[player.id].stack = Number(process.env.INITIAL_STACK) || 2000;
       }
 
       await performRound({ gameId, players, deck, roundNumber: i + 1, buttonPosition });
