@@ -21,6 +21,7 @@
     "luxon": "^3.6.1",
     "motion": "^12.19.2",
     "next": "15.2.1",
+    "poker-odds": "^1.0.1",
     "pokersolver": "^2.1.4",
     "postcss": "^8.5.3",
     "react": "^19.0.0",

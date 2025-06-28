@@ -7,6 +7,7 @@ import schema, { AppSchema } from "@/instant.schema";
 import NumberFlow from '@number-flow/react'
 import { motion, Reorder } from "motion/react"
 import { CaretDown, CaretUp, CircleNotch } from "@phosphor-icons/react";
+import { calculateEquity, EquityResult } from 'poker-odds';
 
 // ID for app: LLM Poker
 const APP_ID = process.env.NEXT_PUBLIC_INSTANT_APP_ID || "";
@@ -44,6 +45,34 @@ export default function Home() {
       }
     }
   });
+
+  const [equity, setEquity] = useState<EquityResult[]>([]);
+
+  useEffect(() => {
+    if (data?.games[0]) {
+      const game = data.games[0];
+      const gameRound = game.gameRounds?.[game.gameRounds.length - 1];
+      if (!gameRound) return;
+
+      const board = gameRound.communityCards?.cards || [];
+      const handsToShow = game.players.map(p => {
+        const lastAction = p.actions?.[p.actions.length - 1];
+        const lastActionFolded = lastAction?.type === "fold" && lastAction?.gameRound?.id === gameRound?.id;
+        if (lastActionFolded) {
+          return null;
+        }
+        const hand = gameRound.hands.find((h: any) => h.player[0]?.id === p.id);
+        return hand?.cards?.cards;
+      }).filter(Boolean);
+
+      if (handsToShow.length > 1 && handsToShow.every(h => h.length > 0)) {
+        const results = calculateEquity(handsToShow as string[][], board, 10000);
+        setEquity(results);
+      } else {
+        setEquity([]);
+      }
+    }
+  }, [data]);
 
   if(isLoading) {
     return (
@@ -92,13 +121,13 @@ export default function Home() {
         ) : data?.games[0] ? (
           <div className="grid grid-cols-3 border-neutral-900 border relative col-span-3 lg:col-span-2">
             <CornerBorders />
-            <Player player={data?.games[0].players[0]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[0]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 0} lastAction={data?.games[0].players[0]?.actions?.[data?.games[0].players[0]?.actions?.length - 1]} data={data} />
-            <Player player={data?.games[0].players[1]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[1]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 1} lastAction={data?.games[0].players[1]?.actions?.[data?.games[0].players[1]?.actions?.length - 1]} data={data}/>
-            <Player player={data?.games[0].players[2]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[2]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 2} lastAction={data?.games[0].players[2]?.actions?.[data?.games[0].players[2]?.actions?.length - 1]} data={data}/>
+            <Player player={data?.games[0].players[0]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[0]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 0} lastAction={data?.games[0].players[0]?.actions?.[data?.games[0].players[0]?.actions?.length - 1]} data={data} equity={equity} />
+            <Player player={data?.games[0].players[1]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[1]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 1} lastAction={data?.games[0].players[1]?.actions?.[data?.games[0].players[1]?.actions?.length - 1]} data={data} equity={equity}/>
+            <Player player={data?.games[0].players[2]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[2]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 2} lastAction={data?.games[0].players[2]?.actions?.[data?.games[0].players[2]?.actions?.length - 1]} data={data} equity={equity}/>
             <Table cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.communityCards.cards} pot={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.pot ?? 0} />
-            <Player player={data?.games[0].players[5]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[5]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 5} lastAction={data?.games[0].players[5]?.actions?.[data?.games[0].players[5]?.actions?.length - 1]} data={data}/>
-            <Player player={data?.games[0].players[4]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[4]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 4} lastAction={data?.games[0].players[4]?.actions?.[data?.games[0].players[4]?.actions?.length - 1]} data={data}/>
-            <Player player={data?.games[0].players[3]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[3]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 3} lastAction={data?.games[0].players[3]?.actions?.[data?.games[0].players[3]?.actions?.length - 1]} data={data}/>
+            <Player player={data?.games[0].players[5]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[5]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 5} lastAction={data?.games[0].players[5]?.actions?.[data?.games[0].players[5]?.actions?.length - 1]} data={data} equity={equity}/>
+            <Player player={data?.games[0].players[4]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[4]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 4} lastAction={data?.games[0].players[4]?.actions?.[data?.games[0].players[4]?.actions?.length - 1]} data={data} equity={equity}/>
+            <Player player={data?.games[0].players[3]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[3]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 3} lastAction={data?.games[0].players[3]?.actions?.[data?.games[0].players[3]?.actions?.length - 1]} data={data} equity={equity}/>
           </div>
         ) : (
           <div className="grid grid-cols-3 border-neutral-900 border relative col-span-3 lg:col-span-2">
@@ -127,7 +156,7 @@ export default function Home() {
   );
 }
 
-const Player = ({player, cards, active, lastAction,data}: {player: InstaQLEntity<AppSchema, "players">, cards?: string[], active?: boolean, lastAction?: InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>, data: any}) => {
+const Player = ({player, cards, active, lastAction,data, equity}: {player: InstaQLEntity<AppSchema, "players">, cards?: string[], active?: boolean, lastAction?: InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>, data: any, equity: EquityResult[]}) => {
   const [showThoughts, setShowThoughts] = useState(false);
 
   if (!player) {
@@ -136,9 +165,12 @@ const Player = ({player, cards, active, lastAction,data}: {player: InstaQLEntity
 
   const lastActionFolded = lastAction?.type === "fold" && lastAction?.gameRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.id;
 
+  const playerEquity = equity.find(e => cards && e.hand.length === cards.length && e.hand.every(c => cards.includes(c)));
+  const winPercentage = playerEquity ? (playerEquity.wins / playerEquity.count) * 100 : null;
+
   return (
     <div className={`bg-neutral-900 p-px overflow-hidden relative ${active ? "border-animation" : ""} h-full flex flex-col ${lastActionFolded ? "opacity-50" : ""}`}>
-      <div className={`relative bg-neutral-950 flex flex-col divide-y divide-neutral-900 flex-1`}>
+      <div className={`relative bg-neutral-950 flex flex-col divide-neutral-900 flex-1`}>
         <div className="flex flex-col lg:flex-row items-start gap-4 justify-between p-4 h-full">
           <div className="flex flex-col">
             <div className="text-xs font-semibold">{player?.name}</div>
@@ -159,8 +191,26 @@ const Player = ({player, cards, active, lastAction,data}: {player: InstaQLEntity
               ))
             )}
           </div>
+
+
         </div>
+
+        {winPercentage !== null && !lastActionFolded && (
+          <div>
+            <p className="text-xs text-neutral-500 px-4">
+              {winPercentage?.toFixed(1)}%
+            </p>
+          <div className="h-px bg-neutral-900">
+            <div className="h-px bg-green-500" style={{width: `${winPercentage}%`}}>
+
+            </div>
+
+          </div>
+          </div>
+        )}
+
         <div className="flex flex-col p-4 shrink-0 gap-1">
+          
         {lastAction?.reasoning && (lastAction as any)?.gameRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.id ? (
           <>
           {(lastAction.type !== 'bet' || (lastAction as any)?.bettingRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds[data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds.length - 1]?.id) && (
