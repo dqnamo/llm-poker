@@ -9,7 +9,7 @@ import { motion, Reorder } from "motion/react"
 import { CaretDown, CaretUp, CircleNotch } from "@phosphor-icons/react";
 
 // ID for app: LLM Poker
-const APP_ID = "9b591b1a-b90d-4eff-ba00-834a5d4fd311";
+const APP_ID = process.env.NEXT_PUBLIC_INSTANT_APP_ID || "";
 
 const db = init({ appId: APP_ID, schema });
 

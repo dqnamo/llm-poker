@@ -26,11 +26,80 @@ function shuffle<T>(array: T[]): void {
   }
 }
 
+export const startGame = task({
+  id: "start-game",
+  retry: {
+    maxAttempts: 1,
+  },
+  // Set an optional maxDuration to prevent tasks from running indefinitely
+  maxDuration: 100000, // Stop executing after 300 secs (5 mins) of compute
+  run: async () => {
+    let deck = ["Ac", "Kc", "Qc", "Jc", "Tc", "9c", "8c", "7c", "6c", "5c", "4c", "3c", "2c", "Ah", "Kh", "Qh", "Jh", "Th", "9h", "8h", "7h", "6h", "5h", "4h", "3h", "2h", "Ad", "Kd", "Qd", "Jd", "Td", "9d", "8d", "7d", "6d", "5d", "4d", "3d", "2d", "As", "Ks", "Qs", "Js", "Ts", "9s", "8s", "7s", "6s", "5s", "4s", "3s", "2s"];
+    shuffle(deck); // Shuffle the deck in place
+
+    const gameId = id();
+    const game = await db.transact(db.tx.games[gameId].update({
+      totalRounds: 100,
+      createdAt: DateTime.now().toISO(),
+      buttonPosition: 0,
+      currentActivePosition: 3,
+      deck: { cards: deck },
+    }))
+    logger.log("Game created", { game });
+
+    const models = ["google/gemini-2.0-flash-001", "google/gemini-2.5-pro", "anthropic/claude-sonnet-4", "openai/gpt-4.1", "openai/o4-mini", "x-ai/grok-3-beta"]
+    const players: { [key: string]: { id: string, cards: string[], stack: number, model: string } } = {};
+    // 6.times
+    for (let i = 0; i < 6; i++) {
+      const playerId = id();
+      const player = await db.transact(db.tx.players[playerId].update({
+        name: models[i],
+        stack: Number(process.env.INITIAL_STACK) || 2000,
+        status: "active",
+        model: models[i],
+        createdAt: DateTime.now().toISO(),
+      }).link({ game: gameId }))
+      logger.log("Player created", { player });
+      players[playerId] = { id: playerId, cards: [], stack: Number(process.env.INITIAL_STACK) || 2000, model: models[i] }
+    }
+
+    // Play the first round
+    for (let i = 0; i < Number(process.env.HANDS_PER_GAME) || 50; i++) {
+      const buttonPosition = i % 6;
+      const activePosition = (buttonPosition + 4) % 6;
+      
+      deck = ["Ac", "Kc", "Qc", "Jc", "Tc", "9c", "8c", "7c", "6c", "5c", "4c", "3c", "2c", "Ah", "Kh", "Qh", "Jh", "Th", "9h", "8h", "7h", "6h", "5h", "4h", "3h", "2h", "Ad", "Kd", "Qd", "Jd", "Td", "9d", "8d", "7d", "6d", "5d", "4d", "3d", "2d", "As", "Ks", "Qs", "Js", "Ts", "9s", "8s", "7s", "6s", "5s", "4s", "3s", "2s"];
+      shuffle(deck);
+
+      // wait 3 seconds
+      await wait.for({ seconds: 3 });
+
+      await db.transact(db.tx.games[gameId].update({
+        buttonPosition: buttonPosition,
+        currentActivePosition: activePosition,
+        deck: { cards: deck },
+      }))
+
+      // check if any player has no more money
+      const playersWithNoMoney = Object.values(players).filter(player => player.stack <= 0);
+      for(const player of playersWithNoMoney) {
+        await db.transact(db.tx.players[player.id].update({
+          stack: Number(process.env.INITIAL_STACK) || 2000,
+        }))
+      }
+
+      await performRound({ gameId, players, deck, roundNumber: i + 1, buttonPosition });
+    }
+
+    // Optionally, loop for more rounds here
+  },
+});
+
 export const performRound = async ({ gameId, players, deck, roundNumber = 1, buttonPosition = 0 }: { gameId: string, players: { [key: string]: { id: string, cards: string[], stack: number, model: string } }, deck: string[], roundNumber?: number, buttonPosition?: number }) => {
-  const hands: { [key: string]: { id: string, playerId: string, cards: string[], folded: boolean, amount: number, acted: boolean, stack: number } } = {};
+  const hands: { [key: string]: { id: string, playerId: string, cards: string[], folded: boolean, amount: number, acted: boolean, stack: number, allIn: boolean } } = {};
 
   // wait 2 seconds
-  await wait.for({ seconds: 2 });
+  
 
   // start round
   const roundId = id();
@@ -85,7 +154,8 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
       amount: 0,
       folded: false,
       acted: false,
-      stack: players[Object.keys(players)[i]].stack
+      stack: players[Object.keys(players)[i]].stack,
+      allIn: false,
     }
   }
 
@@ -139,7 +209,17 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
     hands[bigBlindHand?.id].amount = 10;
   }
 
-  const firstBettingRoundResult = await performBettingRound({ context, hightestBet: 10, pot: 15, hands, gameId, roundId, bettingRoundId, players, startingPlayer: playerToStartPreFlopPosition });
+  let pots: {
+    amount: number,
+    eligiblePlayerIds: string[],
+  }[] = [
+    {
+      amount: 0,
+      eligiblePlayerIds: []
+    }
+  ];
+
+  const firstBettingRoundResult = await performBettingRound({ context, hightestBet: 10, pot: 15, hands, gameId, roundId, bettingRoundId, players, startingPlayer: playerToStartPreFlopPosition, pots });
   console.log("firstBettingRoundResult", firstBettingRoundResult);
 
   // update the pot
@@ -147,26 +227,16 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
     pot: firstBettingRoundResult?.pot || 0,
   }))
 
+  logger.log("pots", { pots });
   // check if only one player is left
-  if(Object.values(hands).filter(hand => !hand.folded).length === 1) {
-    // the winner is the only player left
-    const winner = Object.values(hands).filter(hand => !hand.folded)[0];
-    console.log("winner", winner);
-
-    // update the game
-    const pot = firstBettingRoundResult?.pot || 0;
-
-    await db.transact(db.tx.transactions[id()].update({
-      amount: pot,
-      credit: true,
-      createdAt: DateTime.now().toISO(),
-    }).link({ game: gameId, gameRound: roundId, player: winner.playerId }))
-
-    await db.transact(db.tx.players[winner.playerId].update({
-      stack: players[winner.playerId].stack + pot
-    }))
-
-    players[winner.playerId].stack = players[winner.playerId].stack + pot;
+  if(Object.values(hands).filter(hand => !hand.folded && !hand.allIn).length === 1) {
+    for(const pot of pots) {
+      if(pot.eligiblePlayerIds.length > 0) {
+        const showdownPlayers = Object.values(hands).filter(hand => pot.eligiblePlayerIds.includes(hand.playerId));
+        const communityCards: string[] = [];
+        await performShowdown({showdownPlayers, communityCards, potAmount: pot.amount, gameId, roundId, players});
+      }
+    }
 
     // update the game
     await db.transact(db.tx.games[gameId].update({
@@ -179,7 +249,7 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
   // start the flop
   // give the community cards
   // wait 2 seconds
-  await wait.for({ seconds: 3 });
+  
   const flopCards = deck.slice(0, 3);
   const flop = await db.transact(db.tx.gameRounds[roundId].update({
     communityCards: { cards: flopCards },
@@ -196,33 +266,23 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
   }).link({ game: gameId, gameRound: roundId }))
   logger.log("Flop betting round created", { flopBettingRound });
 
-  const flopBettingRoundResult = await performBettingRound({ context, hightestBet: 0, pot: firstBettingRoundResult?.pot || 0, hands, gameId, roundId, bettingRoundId: flopBettingRoundId, players, startingPlayer: playerToStartPostFlopPosition });
+  const flopBettingRoundResult = await performBettingRound({ context, hightestBet: 0, pot: 0, hands, gameId, roundId, bettingRoundId: flopBettingRoundId, players, startingPlayer: playerToStartPostFlopPosition, pots });
   console.log("flopBettingRoundResult", flopBettingRoundResult);
 
   await db.transact(db.tx.gameRounds[roundId].update({
     pot: flopBettingRoundResult?.pot || 0,
   }))
 
+  logger.log("pots", { pots });
   // check if only one player is left
-  if(Object.values(hands).filter(hand => !hand.folded).length === 1) {
-    // the winner is the only player left
-    const winner = Object.values(hands).filter(hand => !hand.folded)[0];
-    console.log("winner", winner);
-
-    // update the game
-    const pot = flopBettingRoundResult?.pot || 0;
-
-    await db.transact(db.tx.transactions[id()].update({
-      amount: pot,
-      credit: true,
-      createdAt: DateTime.now().toISO(),
-    }).link({ game: gameId, gameRound: roundId, player: winner.playerId }))
-
-    await db.transact(db.tx.players[winner.playerId].update({
-      stack: players[winner.playerId].stack + pot
-    }))
-
-    players[winner.playerId].stack = players[winner.playerId].stack + pot;
+  if(Object.values(hands).filter(hand => !hand.folded && !hand.allIn).length === 1) {
+    for(const pot of pots) {
+      if(pot.eligiblePlayerIds.length > 0) {
+        const showdownPlayers = Object.values(hands).filter(hand => pot.eligiblePlayerIds.includes(hand.playerId));
+        const communityCards: string[] = flopCards;
+        await performShowdown({showdownPlayers, communityCards, potAmount: pot.amount, gameId, roundId, players});
+      }
+    }
 
     // update the game
     await db.transact(db.tx.games[gameId].update({
@@ -235,7 +295,7 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
   // start the turn
   // give the community cards
   // wait 2 seconds
-  await wait.for({ seconds: 3 });
+  
   const turnCards = deck.pop();
   const turn = await db.transact(db.tx.gameRounds[roundId].update({
     communityCards: { cards: flopCards.concat(turnCards!) },
@@ -252,33 +312,23 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
   }).link({ game: gameId, gameRound: roundId }))
   logger.log("Turn betting round created", { turnBettingRound });
 
-  const turnBettingRoundResult = await performBettingRound({ context: flopBettingRoundResult?.context || [], hightestBet: 0, pot: flopBettingRoundResult?.pot || 0, hands, gameId, roundId, bettingRoundId: turnBettingRoundId, players, startingPlayer: playerToStartPostFlopPosition });
+  const turnBettingRoundResult = await performBettingRound({ context: flopBettingRoundResult?.context || [], hightestBet: 0, pot: 0, hands, gameId, roundId, bettingRoundId: turnBettingRoundId, players, startingPlayer: playerToStartPostFlopPosition, pots });
   console.log("turnBettingRoundResult", turnBettingRoundResult);
 
   await db.transact(db.tx.gameRounds[roundId].update({
     pot: turnBettingRoundResult?.pot || 0,
   }))
 
+  logger.log("pots", { pots });
   // check if only one player is left
-  if(Object.values(hands).filter(hand => !hand.folded).length === 1) {
-    // the winner is the only player left
-    const winner = Object.values(hands).filter(hand => !hand.folded)[0];
-    console.log("winner", winner);
-
-    // update the game
-    const pot = turnBettingRoundResult?.pot || 0;
-
-    await db.transact(db.tx.transactions[id()].update({
-      amount: pot,
-      credit: true,
-      createdAt: DateTime.now().toISO(),
-    }).link({ game: gameId, gameRound: roundId, player: winner.playerId }))
-
-    await db.transact(db.tx.players[winner.playerId].update({
-      stack: players[winner.playerId].stack + pot
-    }))
-
-    players[winner.playerId].stack = players[winner.playerId].stack + pot;
+  if(Object.values(hands).filter(hand => !hand.folded && !hand.allIn).length === 1) {
+    for(const pot of pots) {
+      if(pot.eligiblePlayerIds.length > 0) {
+        const showdownPlayers = Object.values(hands).filter(hand => pot.eligiblePlayerIds.includes(hand.playerId));
+        const communityCards: string[] = flopCards.concat(turnCards!);
+        await performShowdown({showdownPlayers, communityCards, potAmount: pot.amount, gameId, roundId, players});
+      }
+    }
 
     // update the game
     await db.transact(db.tx.games[gameId].update({
@@ -291,7 +341,7 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
   // start the river
   // give the community cards
   // wait 2 seconds
-  await wait.for({ seconds: 3 });
+  
   const riverCards = deck.pop();
   const river = await db.transact(db.tx.gameRounds[roundId].update({
     communityCards: { cards: flopCards.concat(turnCards!).concat(riverCards!) },
@@ -308,33 +358,23 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
   }).link({ game: gameId, gameRound: roundId }))
   logger.log("River betting round created", { riverBettingRound });
 
-  const riverBettingRoundResult = await performBettingRound({ context: turnBettingRoundResult?.context || [], hightestBet: 0, pot: turnBettingRoundResult?.pot || 0, hands, gameId, roundId, bettingRoundId: riverBettingRoundId, players, startingPlayer: playerToStartPostFlopPosition });
+  const riverBettingRoundResult = await performBettingRound({ context: turnBettingRoundResult?.context || [], hightestBet: 0, pot: 0, hands, gameId, roundId, bettingRoundId: riverBettingRoundId, players, startingPlayer: playerToStartPostFlopPosition, pots });
   console.log("riverBettingRoundResult", riverBettingRoundResult);
 
   await db.transact(db.tx.gameRounds[roundId].update({
     pot: riverBettingRoundResult?.pot || 0,
   }))
 
+  logger.log("pots", { pots });
   // check if only one player is left
-  if(Object.values(hands).filter(hand => !hand.folded).length === 1) {
-    // the winner is the only player left
-    const winner = Object.values(hands).filter(hand => !hand.folded)[0];
-    console.log("winner", winner);
-
-    // update the game
-    const pot = riverBettingRoundResult?.pot || 0;
-
-    await db.transact(db.tx.transactions[id()].update({
-      amount: pot,
-      credit: true,
-      createdAt: DateTime.now().toISO(),
-    }).link({ game: gameId, gameRound: roundId, player: winner.playerId }))
-
-    await db.transact(db.tx.players[winner.playerId].update({
-      stack: players[winner.playerId].stack + pot
-    }))
-
-    players[winner.playerId].stack = players[winner.playerId].stack + pot;
+  if(Object.values(hands).filter(hand => !hand.folded && !hand.allIn).length === 1) {
+    for(const pot of pots) {
+      if(pot.eligiblePlayerIds.length > 0) {
+        const showdownPlayers = Object.values(hands).filter(hand => pot.eligiblePlayerIds.includes(hand.playerId));
+        const communityCards: string[] = flopCards.concat(turnCards!).concat(riverCards!);
+        await performShowdown({showdownPlayers, communityCards, potAmount: pot.amount, gameId, roundId, players});
+      }
+    }
 
     // update the game
     await db.transact(db.tx.games[gameId].update({
@@ -345,53 +385,64 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
   }
 
   // wait 2 seconds
-  await wait.for({ seconds: 3 });
+  
+
+  for(const pot of pots) {
+    if(pot.eligiblePlayerIds.length > 0) {
+      const showdownPlayers = Object.values(hands).filter(hand => pot.eligiblePlayerIds.includes(hand.playerId));
+      const communityCards: string[] = flopCards.concat(turnCards!).concat(riverCards!);
+      await performShowdown({showdownPlayers, communityCards, potAmount: pot.amount, gameId, roundId, players});
+    }
+  }
+  
+
+
   // start the showdown
-  // the players still in the game are the ones who have not folded
-  const showdownPlayers = Object.values(hands).filter(hand => !hand.folded);
-  console.log("showdownPlayers", showdownPlayers);
+  // // the players still in the game are the ones who have not folded
+  // const showdownPlayers = Object.values(hands).filter(hand => !hand.folded);
+  // console.log("showdownPlayers", showdownPlayers);
 
-  // get the community cards from the round
-  const communityCards: string[] = flopCards.concat(turnCards!).concat(riverCards!);
+  // // get the community cards from the round
+  // const communityCards: string[] = flopCards.concat(turnCards!).concat(riverCards!);
 
-  // build each player's 7-card hand (2 hole + 5 community)
-  const solvedHands = showdownPlayers.map(playerHand => {
-    const allCards = [...playerHand.cards, ...communityCards];
-    return {
-      playerId: playerHand.playerId,
-      hand: Hand.solve(allCards)
-    };
-  });
+  // // build each player's 7-card hand (2 hole + 5 community)
+  // const solvedHands = showdownPlayers.map(playerHand => {
+  //   const allCards = [...playerHand.cards, ...communityCards];
+  //   return {
+  //     playerId: playerHand.playerId,
+  //     hand: Hand.solve(allCards)
+  //   };
+  // });
 
-  // find the winner(s)
-  const winners = Hand.winners(solvedHands.map(h => h.hand));
+  // // find the winner(s)
+  // const winners = Hand.winners(solvedHands.map(h => h.hand));
 
-  // find which player(s) won
-  const winnerPlayers = solvedHands.filter(h => winners.includes(h.hand));
-  for (const winner of winnerPlayers) {
-    console.log(`Winner: Player ${winner.playerId}, Hand: ${winner.hand.name}, Description: ${winner.hand.descr}`);
-  }
+  // // find which player(s) won
+  // const winnerPlayers = solvedHands.filter(h => winners.includes(h.hand));
+  // for (const winner of winnerPlayers) {
+  //   console.log(`Winner: Player ${winner.playerId}, Hand: ${winner.hand.name}, Description: ${winner.hand.descr}`);
+  // }
 
-  // update the game
-  const pot = riverBettingRoundResult?.pot || 0;
-  const potSplitWithWinner = pot / winnerPlayers.length;
+  // // update the game
+  // const pot = riverBettingRoundResult?.pot || 0;
+  // const potSplitWithWinner = pot / winnerPlayers.length;
 
-  for (const winner of winnerPlayers) {
-    const winnerAmount = potSplitWithWinner;
-    const winnerReasoning = `The winner is ${winner.playerId} with ${winner.hand.name} ${winner.hand.descr}.`;
+  // for (const winner of winnerPlayers) {
+  //   const winnerAmount = potSplitWithWinner;
+  //   const winnerReasoning = `The winner is ${winner.playerId} with ${winner.hand.name} ${winner.hand.descr}.`;
 
-    await db.transact(db.tx.transactions[id()].update({
-      amount: winnerAmount,
-      credit: true,
-      createdAt: DateTime.now().toISO(),
-    }).link({ game: gameId, gameRound: roundId, player: winner.playerId }))
+  //   await db.transact(db.tx.transactions[id()].update({
+  //     amount: winnerAmount,
+  //     credit: true,
+  //     createdAt: DateTime.now().toISO(),
+  //   }).link({ game: gameId, gameRound: roundId, player: winner.playerId }))
 
-    await db.transact(db.tx.players[winner.playerId].update({
-      stack: players[winner.playerId].stack + winnerAmount
-    }))
+  //   await db.transact(db.tx.players[winner.playerId].update({
+  //     stack: players[winner.playerId].stack + winnerAmount
+  //   }))
 
-    players[winner.playerId].stack = players[winner.playerId].stack + winnerAmount;
-  }
+  //   players[winner.playerId].stack = players[winner.playerId].stack + winnerAmount;
+  // }
 
   // update the game
   await db.transact(db.tx.games[gameId].update({
@@ -402,70 +453,9 @@ export const performRound = async ({ gameId, players, deck, roundNumber = 1, but
   return {
     roundId,
     hands,
-    winnerPlayers,
-    pot,
-    communityCards,
     context,
   };
 }
-
-export const startGame = task({
-  id: "start-game",
-  retry: {
-    maxAttempts: 1,
-  },
-  // Set an optional maxDuration to prevent tasks from running indefinitely
-  maxDuration: 100000, // Stop executing after 300 secs (5 mins) of compute
-  run: async () => {
-    let deck = ["Ac", "Kc", "Qc", "Jc", "Tc", "9c", "8c", "7c", "6c", "5c", "4c", "3c", "2c", "Ah", "Kh", "Qh", "Jh", "Th", "9h", "8h", "7h", "6h", "5h", "4h", "3h", "2h", "Ad", "Kd", "Qd", "Jd", "Td", "9d", "8d", "7d", "6d", "5d", "4d", "3d", "2d", "As", "Ks", "Qs", "Js", "Ts", "9s", "8s", "7s", "6s", "5s", "4s", "3s", "2s"];
-    shuffle(deck); // Shuffle the deck in place
-
-    const gameId = id();
-    const game = await db.transact(db.tx.games[gameId].update({
-      totalRounds: 100,
-      createdAt: DateTime.now().toISO(),
-      buttonPosition: 0,
-      currentActivePosition: 3,
-      deck: { cards: deck },
-    }))
-    logger.log("Game created", { game });
-
-    const models = ["google/gemini-2.0-flash-001", "google/gemini-2.5-pro", "anthropic/claude-sonnet-4", "openai/gpt-4.1", "openai/o4-mini", "x-ai/grok-3-beta"]
-    const players: { [key: string]: { id: string, cards: string[], stack: number, model: string } } = {};
-    // 6.times
-    for (let i = 0; i < 6; i++) {
-      const playerId = id();
-      const player = await db.transact(db.tx.players[playerId].update({
-        name: models[i],
-        stack: Number(process.env.INITIAL_STACK) || 2000,
-        status: "active",
-        model: models[i],
-        createdAt: DateTime.now().toISO(),
-      }).link({ game: gameId }))
-      logger.log("Player created", { player });
-      players[playerId] = { id: playerId, cards: [], stack: Number(process.env.INITIAL_STACK) || 2000, model: models[i] }
-    }
-
-    // Play the first round
-    for (let i = 0; i < Number(process.env.HANDS_PER_GAME) || 50; i++) {
-      const buttonPosition = i % 6;
-      const activePosition = (buttonPosition + 4) % 6;
-      
-      deck = ["Ac", "Kc", "Qc", "Jc", "Tc", "9c", "8c", "7c", "6c", "5c", "4c", "3c", "2c", "Ah", "Kh", "Qh", "Jh", "Th", "9h", "8h", "7h", "6h", "5h", "4h", "3h", "2h", "Ad", "Kd", "Qd", "Jd", "Td", "9d", "8d", "7d", "6d", "5d", "4d", "3d", "2d", "As", "Ks", "Qs", "Js", "Ts", "9s", "8s", "7s", "6s", "5s", "4s", "3s", "2s"];
-      shuffle(deck);
-
-      await db.transact(db.tx.games[gameId].update({
-        buttonPosition: buttonPosition,
-        currentActivePosition: activePosition,
-        deck: { cards: deck },
-      }))
-
-      await performRound({ gameId, players, deck, roundNumber: i + 1, buttonPosition });
-    }
-
-    // Optionally, loop for more rounds here
-  },
-});
 
 const generateAction = async ({playerId, cards, bet, context, pot, playerStack, model}: {playerId: string, cards: string[], bet: number, context: string[], pot: number, playerStack: number, model: string}) => {
 
@@ -576,7 +566,10 @@ const generateAction = async ({playerId, cards, bet, context, pot, playerStack, 
 }
 
 
-const performBettingRound = async ({context, hightestBet, pot, hands, gameId, roundId, bettingRoundId, players, startingPlayer}: {context: string[], hightestBet: number, pot: number, hands: { [key: string]: { id: string, playerId: string, cards: string[], folded: boolean, amount: number, acted: boolean } }, gameId: string, roundId: string, bettingRoundId: string, players: { [key: string]: { cards: string[], stack: number, model: string } }, startingPlayer: number}) => {
+const performBettingRound = async ({context, hightestBet, pot, hands, gameId, roundId, bettingRoundId, players, startingPlayer, pots}: {context: string[], hightestBet: number, pot: number, hands: { [key: string]: { id: string, playerId: string, cards: string[], folded: boolean, amount: number, acted: boolean, allIn: boolean } }, gameId: string, roundId: string, bettingRoundId: string, players: { [key: string]: { cards: string[], stack: number, model: string } }, startingPlayer: number, pots: { amount: number, eligiblePlayerIds: string[] }[]}) => {
+
+    logger.log("pots", { pots });
+    let sidePots = []
 
     // start the first betting round
     for (let i = startingPlayer; i < Object.keys(hands).length;) {
@@ -594,7 +587,7 @@ const performBettingRound = async ({context, hightestBet, pot, hands, gameId, ro
         }
         continue;
       }
-      await wait.for({ seconds: 3 });
+      
 
       // change current active position
       await db.transact(db.tx.games[gameId].update({
@@ -670,7 +663,13 @@ const performBettingRound = async ({context, hightestBet, pot, hands, gameId, ro
               // Update highest bet if all-in amount is higher
               if(allInAmount > hightestBet) {
                 hightestBet = allInAmount;
+              }else{
+                hands[Object.keys(hands)[i]].allIn = true;
+                sidePots.push({
+                  amount: allInAmount,
+                })
               }
+
               pot += allInAmount;
               hands[Object.keys(hands)[i]].amount = allInAmount;
               hands[Object.keys(hands)[i]].acted = true;
@@ -755,13 +754,16 @@ const performBettingRound = async ({context, hightestBet, pot, hands, gameId, ro
 
 
       // check if everyone but one has folded
-      if(Object.values(hands).filter(hand => !hand.folded).length === 1) {
+      if(Object.values(hands).filter(hand => !hand.folded && !hand.allIn).length === 1) {
         // the winner is the only player left
         // make all players to have not acted yet (RESET)
         Object.values(hands).forEach(hand => {
           hand.acted = false;
           hand.amount = 0;
         });
+
+        pots[0].amount = pots[0].amount + pot;
+        pots[0].eligiblePlayerIds = Object.values(hands).filter(hand => !hand.folded).map(hand => hand.playerId);
 
         return {
           context,
@@ -773,7 +775,7 @@ const performBettingRound = async ({context, hightestBet, pot, hands, gameId, ro
     
       // check if highest bet * number of players who have not folded is equal to the pot. make sure all players have acted
       const allPlayersBetTheSameAmount = Object.values(hands)
-        .filter(hand => !hand.folded)
+        .filter(hand => !hand.folded && !hand.allIn)
         .every(hand => hand.amount === hightestBet && hand.acted);
 
       console.log("context", context);
@@ -785,10 +787,25 @@ const performBettingRound = async ({context, hightestBet, pot, hands, gameId, ro
           hand.amount = 0;
         });
 
+        let amountOfPlayers = Object.values(hands).filter(hand => !hand.folded).length;
+        // check if there are side pots
+        for(const sidePot of sidePots) {
+          let sidePotAmount = sidePot.amount * amountOfPlayers;
+          pot = pot - sidePotAmount;
+          pots.push({
+            amount: sidePotAmount,
+            eligiblePlayerIds: Object.values(hands).filter(hand => !hand.folded).map(hand => hand.playerId),
+          })
+        }
+          
+
+        pots[0].amount = pots[0].amount + pot;
+        pots[0].eligiblePlayerIds = Object.values(hands).filter(hand => !hand.folded).map(hand => hand.playerId);
         return {
           context,
           hands,
           pot,
+          pots,
         }
       }else{
         console.log("Not all players have bet the same amount");
@@ -801,4 +818,51 @@ const performBettingRound = async ({context, hightestBet, pot, hands, gameId, ro
         // await performBettingRound({context, hightestBet, pot, hands, gameId, roundId, bettingRoundId});
       }
     }
+}
+
+const performShowdown = async ({showdownPlayers, communityCards, potAmount, gameId, roundId, players}: {showdownPlayers: { playerId: string, cards: string[] }[], communityCards: string[], potAmount: number, gameId: string, roundId: string, players: { [key: string]: { cards: string[], stack: number, model: string } }}) => {
+
+  // build each player's 7-card hand (2 hole + 5 community)
+  const solvedHands = showdownPlayers.map(playerHand => {
+    const allCards = [...playerHand.cards, ...communityCards];
+    return {
+      playerId: playerHand.playerId,
+      hand: Hand.solve(allCards)
+    };
+  });
+
+  // find the winner(s)
+  const winners = Hand.winners(solvedHands.map(h => h.hand));
+
+  logger.log("winners", { winners });
+
+  // find which player(s) won
+  const winnerPlayers = solvedHands.filter(h => winners.includes(h.hand));
+  for (const winner of winnerPlayers) {
+    logger.log(`Winner: Player ${winner.playerId}, Hand: ${winner.hand.name}, Description: ${winner.hand.descr}`);
+  }
+
+  logger.log("winnerPlayers", { winnerPlayers });
+  logger.log("potAmount", { potAmount });
+
+  // update the game
+  const pot = potAmount;
+  const potSplitWithWinner = pot / winnerPlayers.length;
+
+  for (const winner of winnerPlayers) {
+    const winnerAmount = potSplitWithWinner;
+    const winnerReasoning = `The winner is ${winner.playerId} with ${winner.hand.name} ${winner.hand.descr}.`;
+
+    await db.transact(db.tx.transactions[id()].update({
+      amount: winnerAmount,
+      credit: true,
+      createdAt: DateTime.now().toISO(),
+    }).link({ game: gameId, gameRound: roundId, player: winner.playerId }))
+
+    await db.transact(db.tx.players[winner.playerId].update({
+      stack: players[winner.playerId].stack + winnerAmount
+    }))
+
+    players[winner.playerId].stack = players[winner.playerId].stack + winnerAmount;
+  }
 }
