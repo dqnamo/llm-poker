@@ -1,36 +1,142 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LLM Poker
 
-## Getting Started
+A real-time Texas Hold'em poker game where different AI language models compete against each other. Watch as AI players make strategic decisions, bluff, and compete for chips while you observe their reasoning in real-time.
 
-First, run the development server:
+## 🎮 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Live AI vs AI Gameplay**: Six different language models play Texas Hold'em autonomously
+- **Real-time Web Interface**: Watch games unfold with live updates and animations
+- **AI Reasoning Display**: See what each AI is thinking as they make decisions
+- **Equity Calculations**: Real-time win probability calculations for each hand
+- **Historical Analysis**: Track performance across multiple games
+- **Beautiful UI**: Modern, responsive interface with smooth animations
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🏗️ Architecture
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Frontend (`/app`)
+- **Next.js 15** with App Router
+- **Real-time updates** via InstantDB
+- **Components**:
+  - Live game visualization
+  - Player cards and chip stacks
+  - Community cards display
+  - AI reasoning viewer
+  - Historical game browser
+  - Performance analytics
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Game Engine (`/engine`)
+- **Modular TypeScript** architecture
+- **Core Modules**:
+  - `types.ts` - Type definitions for game state
+  - `constants.ts` - Game configuration and AI models
+  - `game-setup.ts` - Game initialization
+  - `round-manager.ts` - Round orchestration
+  - `betting-round.ts` - Betting logic and pot management
+  - `ai-player.ts` - AI decision making interface
+  - `showdown.ts` - Hand evaluation and winner determination
+  - `utils.ts` - Helper functions
 
-## Learn More
+### Backend (`/trigger`)
+- **Trigger.dev** for game orchestration
+- Manages game flow and AI API calls
+- Handles database updates
 
-To learn more about Next.js, take a look at the following resources:
+## 🤖 AI Models
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The game features various language models competing:
+- GPT-4
+- Claude 3
+- Gemini Pro
+- Llama 3
+- Mixtral
+- And more via OpenRouter
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Each model receives the same game information and must decide whether to fold, check, call, raise, or go all-in based on their cards, the community cards, and the betting action.
 
-## Deploy on Vercel
+## 🎯 Game Flow
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. **Pre-flop**: Each player receives 2 hole cards
+2. **Flop**: 3 community cards are revealed
+3. **Turn**: 4th community card is revealed
+4. **River**: Final community card is revealed
+5. **Showdown**: Best hand wins the pot
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The game continues for multiple rounds, tracking each AI's performance over time.
+
+## 🗄️ Database Schema
+
+Uses InstantDB for real-time data synchronization:
+- `games` - Overall game state and configuration
+- `players` - AI players and their chip stacks
+- `gameRounds` - Individual poker hands
+- `hands` - Player hole cards
+- `bettingRounds` - Betting action for each phase
+- `actions` - Individual player decisions
+- `transactions` - Chip movements and pot distributions
+
+## 🚀 Getting Started
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/llm-poker.git
+   cd llm-poker
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   NEXT_PUBLIC_INSTANT_APP_ID=your_instant_app_id
+   OPENROUTER_API_KEY=your_openrouter_key
+   TRIGGER_SECRET_KEY=your_trigger_key
+   ```
+
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Start a game**
+   - Navigate to `http://localhost:3000`
+   - Use Trigger.dev dashboard to initiate games
+
+## 🔧 Configuration
+
+Game parameters can be adjusted in `/engine/constants.ts`:
+- Initial stack size
+- Blind amounts
+- Number of hands per game
+- AI models to include
+
+## 📊 Analyzing Results
+
+The web interface provides:
+- Real-time win/loss tracking
+- Historical game data
+- Per-model performance statistics
+- Hand history replay
+- Equity calculations
+
+## 🎨 UI Components
+
+- `Card.tsx` - Playing card display
+- `Player.tsx` - Player information and actions
+- `ChipStack.tsx` - Animated chip displays
+- `Button.tsx` - Consistent button styling
+- `FramedLink.tsx` - Navigation components
+
+## 🔮 Future Enhancements
+
+- Human vs AI gameplay
+- Tournament mode
+- Different poker variants (Omaha, Stud)
+- Advanced statistics and analytics
+- Replay system for interesting hands
+- AI model fine-tuning based on results
+
+## 📝 License
+
+MIT License - feel free to use this project for your own experiments with AI and game theory! 
