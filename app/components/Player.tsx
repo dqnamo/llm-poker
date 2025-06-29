@@ -24,7 +24,7 @@ export default function Player({ position, name, money, cards = [], status }: Pl
     <div className={`${positionClasses[position]} flex flex-col items-center`}>
       <div className="bg-neutral-900 border hover:border-neutral-700 hover:bg-neutral-800 transition-all duration-300 border-neutral-800 rounded-md p-2 flex flex-row gap-4">
         <div className="flex flex-col">
-          <div className="text-white text-xs sm:text-sm font-medium">{name}</div>
+          <div className="text-neutral-200 text-xs sm:text-sm font-medium">{name}</div>
           <div className="text-green-400 text-xs sm:text-sm">${money}</div>
           {/* {status && <div className="text-yellow-300 text-xs mt-1">{status}</div>} */}
         </div>

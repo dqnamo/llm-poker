@@ -77,7 +77,7 @@ export default function Home() {
   if(isLoading) {
     return (
       <div className="flex flex-col h-dvh p-10 items-center justify-center">
-        <div className="text-white font-geist-mono w-max p-4 flex flex-col items-center gap-2">
+        <div className="text-neutral-200 font-geist-mono w-max p-4 flex flex-col items-center gap-2">
         <CircleNotch size={16} className="animate-spin" />
         <p className="text-xs text-neutral-500 font-semibold uppercase">Loading</p>
         </div>
@@ -88,7 +88,7 @@ export default function Home() {
   if(error) {
     return (
       <div className="flex flex-col h-dvh p-10 items-center justify-center">
-        <div className="text-white font-geist-mono w-max p-4 flex flex-col items-center gap-2">
+        <div className="text-neutral-200 font-geist-mono w-max p-4 flex flex-col items-center gap-2">
           <p className="text-xs text-neutral-500 font-semibold uppercase">Error</p>
         </div>
       </div>
@@ -97,7 +97,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-dvh p-10">
-      <div className="text-white font-geist-mono grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto w-full">
+      <div className="text-neutral-200 font-geist-mono grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto w-full">
 
         <div className="flex flex-row items-center justify-between col-span-3">
           <div className="flex flex-col gap-1">
@@ -170,7 +170,7 @@ const Player = ({player, cards, active, lastAction,data, equity}: {player: Insta
 
   return (
     <div className={`bg-neutral-900 p-px overflow-hidden relative ${active ? "border-animation" : ""} h-full flex flex-col ${lastActionFolded ? "opacity-50" : ""}`}>
-      <div className={`relative bg-neutral-950 flex flex-col divide-neutral-900 flex-1`}>
+      <div className={`relative bg-neutral-950 grid grid-cols-1 divide-neutral-900 flex-1`}>
         <div className="flex flex-col lg:flex-row items-start gap-4 justify-between p-4 h-full">
           <div className="flex flex-col">
             <div className="text-xs font-semibold">{player?.name}</div>
@@ -195,60 +195,61 @@ const Player = ({player, cards, active, lastAction,data, equity}: {player: Insta
 
         </div>
 
-        {winPercentage !== null && !lastActionFolded && (
-          <div>
-            <p className="text-xs text-neutral-500 px-4">
-              {winPercentage?.toFixed(1)}%
-            </p>
-          <div className="h-px bg-neutral-900">
-            <div className="h-px bg-green-500" style={{width: `${winPercentage}%`}}>
-
-            </div>
-
-          </div>
-          </div>
-        )}
-
-        <div className="flex flex-col p-4 shrink-0 gap-1">
-          
-        {lastAction?.reasoning && (lastAction as any)?.gameRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.id ? (
-          <>
-          {(lastAction.type !== 'bet' || (lastAction as any)?.bettingRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds[data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds.length - 1]?.id) && (
-            <>
-            <div className="text-xs  text-neutral-200 font-mono uppercase font-medium">{lastAction?.type}</div>
-          
-
-            {Number(lastAction?.amount) > 0 && (
-              <div className="flex flex-row items-center gap-1">
-                <div className="text-lg text-teal-500">¤</div>
-                <div className="text-xs text-neutral-400">
-                  <NumberFlow
-                    value={lastAction?.amount ?? 0}
-                  />
+          <div className="flex flex-col mt-auto">
+            {winPercentage !== null && !lastActionFolded && (
+              <div>
+                <p className="text-xs text-neutral-500 px-4">
+                  {winPercentage?.toFixed(1)}%
+                </p>
+              <div className="h-px bg-neutral-900">
+                <div className="h-px bg-green-500" style={{width: `${winPercentage}%`}}>
                 </div>
               </div>
-            )}
-            </>
-          )}
-          
-          <div className="flex flex-col gap-2">
-            <button 
-              onClick={() => setShowThoughts(!showThoughts)}
-              className="text-xs text-neutral-500 hover:text-neutral-300 cursor-pointer text-left"
-            >
-              {showThoughts ? 'Hide Thoughts' : 'Show Thoughts'}
-            </button>
-            {showThoughts && (
-              <div className="text-xs text-neutral-400 bg-neutral-900 p-2 rounded border border-neutral-800">
-                {lastAction.reasoning}
               </div>
             )}
+            <div className="flex flex-col p-4 shrink-0 gap-1">
+            
+            {lastAction?.reasoning && (lastAction as any)?.gameRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.id ? (
+              <>
+              {(lastAction.type !== 'bet' || (lastAction as any)?.bettingRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds[data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds.length - 1]?.id) && (
+                <div className="flex flex-row items-center gap-2">
+                <div className="text-xs  text-neutral-200 font-mono uppercase font-medium">{lastAction?.type}</div>
+            
+                {Number(lastAction?.amount) > 0 && (
+                  <div className="flex flex-row items-center gap-1">
+                    <div className="text-lg text-teal-500">¤</div>
+                    <div className="text-xs text-neutral-400">
+                      <NumberFlow
+                        value={lastAction?.amount ?? 0}
+                      />
+                    </div>
+                  </div>
+                )}
+                </div>
+              )}
+            
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => setShowThoughts(!showThoughts)}
+                  className="text-xs text-neutral-500 hover:text-neutral-300 cursor-pointer text-left"
+                >
+                  {showThoughts ? 'Hide Thoughts' : 'Show Thoughts'}
+                </button>
+                {showThoughts && (
+                  <div className="text-xs text-neutral-400 bg-neutral-900 p-2 rounded border border-neutral-800">
+                    {lastAction.reasoning}
+                  </div>
+                )}
+              </div>
+              </>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="text-xs  text-neutral-500 font-mono font-medium">Hasn't acted yet</div>
+          
+              </div>
+            )}
+            </div>
           </div>
-          </>
-        ) : (
-          <p className="text-xs text-neutral-500">Hasn't acted yet</p>
-        )}
-        </div>
       </div>
     </div>
   );

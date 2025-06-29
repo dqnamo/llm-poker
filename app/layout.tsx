@@ -39,7 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`bg-neutral-950`}>
       <body
-        className={`antialiased h-screen text-white ${geistMono.variable}`}
+        className={`antialiased h-screen ${geistMono.variable}`}
       >
         {children}
       </body>

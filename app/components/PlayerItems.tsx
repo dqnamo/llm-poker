@@ -21,7 +21,7 @@ const positionClasses: Record<Position, string> = {
 const PlayerItems = ({ position, playerNumber, betAmount = 0 }: PlayerItemsProps) => {
   return (
     <div className={`${positionClasses[position]} w-12 sm:w-16 h-12 sm:h-16 rounded flex flex-col items-center`}>
-      <div className="text-[10px] sm:text-xs text-white text-center mb-1">
+      <div className="text-[10px] sm:text-xs text-neutral-200 text-center mb-1">
         {betAmount > 0 ? `Bet: $${betAmount}` : 'No Bet'}
       </div>
       {betAmount > 0 && (

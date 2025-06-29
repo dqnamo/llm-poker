@@ -25,8 +25,8 @@ const Card = ({ value, className = "", faceDown = false }: CardProps) => {
   }
 
   const isRed = suit === 'h' || suit === 'd';
-  const textColor = isRed ? 'text-white' : 'text-white';
-  const borderColor = isRed ? 'border-red-500' : 'border-neutral-500';
+  const textColor = isRed ? 'text-neutral-200' : 'text-neutral-200';
+  const borderColor = isRed ? 'border-red-500' : 'border-neutral-300';
   
   return (
     <motion.div 
@@ -47,10 +47,10 @@ const Card = ({ value, className = "", faceDown = false }: CardProps) => {
           <span className="text-xs sm:text-sm font-bold">{rankText}</span>
           {/* <span className="text-xs sm:text-sm font-bold">{suit}</span> */}
 
-          {suit === 'h' && <Heart className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-500'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
-          {suit === 'd' && <Diamond className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-500'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
-          {suit === 'c' && <Club className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-500'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
-          {suit === 's' && <Spade className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-500'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
+          {suit === 'h' && <Heart className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
+          {suit === 'd' && <Diamond className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
+          {suit === 'c' && <Club className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
+          {suit === 's' && <Spade className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
         </div>
       ) : (
         // Face down card
