@@ -14,10 +14,15 @@ export const db = init({
 });
 
 /**
- * Initialize a new game with default settings
+ * Initialize a new game with configurable settings
+ * @param handsPerGame - Number of hands to play in the game
+ * @param initialStack - Starting stack size for each player
  * @returns Game ID and initial game state
  */
-export async function initializeGame(): Promise<{
+export async function initializeGame(
+  handsPerGame: number = GAME_CONFIG.HANDS_PER_GAME,
+  initialStack: number = GAME_CONFIG.INITIAL_STACK
+): Promise<{
   gameId: string;
   players: Record<string, Player>;
 }> {
@@ -28,7 +33,7 @@ export async function initializeGame(): Promise<{
   // Create game record
   await db.transact(
     db.tx.games[gameId].update({
-      totalRounds: GAME_CONFIG.HANDS_PER_GAME,
+      totalRounds: handsPerGame,
       createdAt: DateTime.now().toISO(),
       buttonPosition: 0,
       currentActivePosition: 3,
@@ -38,8 +43,8 @@ export async function initializeGame(): Promise<{
 
   logger.log("Game created", { gameId });
 
-  // Initialize players
-  const players = await initializePlayers(gameId);
+  // Initialize players with custom stack size
+  const players = await initializePlayers(gameId, initialStack);
 
   return { gameId, players };
 }
@@ -47,22 +52,23 @@ export async function initializeGame(): Promise<{
 /**
  * Initialize all players for the game
  * @param gameId - The game ID to link players to
+ * @param initialStack - Starting stack size for each player
  * @returns Record of initialized players
  */
-async function initializePlayers(gameId: string): Promise<Record<string, Player>> {
+async function initializePlayers(gameId: string, initialStack: number): Promise<Record<string, Player>> {
   const players: Record<string, Player> = {};
 
   for (let i = 0; i < GAME_CONFIG.PLAYER_COUNT; i++) {
     const playerId = id();
-    const model = AI_MODELS[i];
+    const model = AI_MODELS[i].model;
 
     await db.transact(
       db.tx.players[playerId]
         .update({
-          name: model,
-          stack: GAME_CONFIG.INITIAL_STACK,
+          name: AI_MODELS[i].name,
+          stack: initialStack,
           status: "active",
-          model: model,
+          model: AI_MODELS[i].model,
           createdAt: DateTime.now().toISO(),
         })
         .link({ game: gameId })
@@ -71,7 +77,7 @@ async function initializePlayers(gameId: string): Promise<Record<string, Player>
     players[playerId] = {
       id: playerId,
       cards: [],
-      stack: GAME_CONFIG.INITIAL_STACK,
+      stack: initialStack,
       model: model,
     };
 
@@ -84,19 +90,23 @@ async function initializePlayers(gameId: string): Promise<Record<string, Player>
 /**
  * Reset players who have run out of chips
  * @param players - Current player states
+ * @param initialStack - Stack size to reset players to
  */
-export async function resetBustedPlayers(players: Record<string, Player>): Promise<void> {
+export async function resetBustedPlayers(
+  players: Record<string, Player>, 
+  initialStack: number = GAME_CONFIG.INITIAL_STACK
+): Promise<void> {
   const bustedPlayers = Object.values(players).filter(player => player.stack <= 0);
 
   for (const player of bustedPlayers) {
     await db.transact(
       db.tx.players[player.id].update({
-        stack: GAME_CONFIG.INITIAL_STACK,
+        stack: initialStack,
       })
     );
 
-    players[player.id].stack = GAME_CONFIG.INITIAL_STACK;
-    logger.log("Player reset", { playerId: player.id, newStack: GAME_CONFIG.INITIAL_STACK });
+    players[player.id].stack = initialStack;
+    logger.log("Player reset", { playerId: player.id, newStack: initialStack });
   }
 }
 

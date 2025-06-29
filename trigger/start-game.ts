@@ -25,17 +25,24 @@ export const startGame = task({
     maxAttempts: 1,
   },
   maxDuration: GAME_CONFIG.MAX_DURATION,
-  run: async () => {
+  run: async (payload: { 
+    handsPerGame?: number; 
+    initialStack?: number; 
+  } = {}) => {
+    // Use provided values or fall back to defaults
+    const handsPerGame = payload.handsPerGame ?? GAME_CONFIG.HANDS_PER_GAME;
+    const initialStack = payload.initialStack ?? GAME_CONFIG.INITIAL_STACK;
+
     logger.log("Starting new poker game", { 
-      handsPerGame: GAME_CONFIG.HANDS_PER_GAME,
-      initialStack: GAME_CONFIG.INITIAL_STACK 
+      handsPerGame,
+      initialStack 
     });
     
-    // Initialize game and players
-    const { gameId, players } = await initializeGame();
+    // Initialize game and players with custom values
+    const { gameId, players } = await initializeGame(handsPerGame, initialStack);
     
     // Play multiple rounds
-    for (let roundIndex = 0; roundIndex < GAME_CONFIG.HANDS_PER_GAME; roundIndex++) {
+    for (let roundIndex = 0; roundIndex < handsPerGame; roundIndex++) {
       // Calculate positions for this round
       const buttonPosition = roundIndex % GAME_CONFIG.PLAYER_COUNT;
       
@@ -51,8 +58,8 @@ export const startGame = task({
       // Update game state with new positions
       await updateGameState(gameId, buttonPosition, deck);
       
-      // Reset any busted players
-      await resetBustedPlayers(players);
+      // Reset any busted players with custom stack size
+      await resetBustedPlayers(players, initialStack);
       
       // Play the round
       try {
@@ -73,12 +80,12 @@ export const startGame = task({
     
     logger.log("Game completed", { 
       gameId, 
-      totalRounds: GAME_CONFIG.HANDS_PER_GAME 
+      totalRounds: handsPerGame 
     });
     
     return {
       gameId,
-      roundsPlayed: GAME_CONFIG.HANDS_PER_GAME,
+      roundsPlayed: handsPerGame,
       finalStacks: Object.entries(players).map(([id, player]) => ({
         playerId: id,
         model: player.model,

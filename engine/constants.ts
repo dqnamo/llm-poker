@@ -12,12 +12,30 @@ export const GAME_CONFIG = {
 } as const;
 
 export const AI_MODELS = [
-  "google/gemini-2.0-flash-001",
-  "google/gemini-2.5-pro",
-  "anthropic/claude-sonnet-4",
-  "openai/gpt-4.1",
-  "openai/o4-mini",
-  "x-ai/grok-3-beta"
+  {
+    name: "Gemini 2.0 Flash",
+    model: "google/gemini-2.0-flash-001",
+  },
+  {
+    name: "Gemini 2.5 Pro",
+    model: "google/gemini-2.5-pro",
+  },
+  {
+    name: "Claude Sonnet 4",
+    model: "anthropic/claude-sonnet-4",
+  },
+  {
+    name: "GPT-4.1",
+    model: "openai/gpt-4.1",
+  },
+  {
+    name: "O4 Mini",
+    model: "openai/o4-mini",
+  },
+  {
+    name: "Grok 3 Beta",
+    model: "x-ai/grok-3-beta",
+  },
 ] as const;
 
 // Create a standard 52-card deck
