@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Bebas_Neue, Barlow, Space_Grotesk, Geist_Mono } from "next/font/google";
+import Footer from "./components/Footer";
 
 const bebasNeue = Bebas_Neue({
   variable: "--font-bebas-neue",
@@ -39,9 +40,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`bg-neutral-950`}>
       <body
-        className={`antialiased h-screen ${geistMono.variable}`}
+        className={`antialiased h-full ${geistMono.variable} flex flex-col`}
       >
         {children}
+        <Footer />
       </body>
     </html>
   );

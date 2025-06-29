@@ -17,6 +17,7 @@ const _schema = i.schema({
       buttonPosition: i.number(),
       createdAt: i.date().indexed(),
       currentActivePosition: i.number().optional(),
+      completedAt: i.date().optional(),
     }),
     players: i.entity({
       name: i.string(),

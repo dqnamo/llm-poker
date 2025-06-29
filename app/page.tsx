@@ -8,6 +8,9 @@ import NumberFlow from '@number-flow/react'
 import { motion, Reorder } from "motion/react"
 import { CaretDown, CaretUp, CircleNotch } from "@phosphor-icons/react";
 import { calculateEquity, EquityResult } from 'poker-odds';
+import Button from "./components/Button";
+import Link from "next/link";
+import FramedLink from "./components/FramedLink";
 
 // ID for app: LLM Poker
 const APP_ID = process.env.NEXT_PUBLIC_INSTANT_APP_ID || "";
@@ -96,15 +99,18 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col h-dvh p-10">
+    <div className="flex flex-col h-full p-10">
       <div className="text-neutral-200 font-geist-mono grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto w-full">
 
         <div className="flex flex-row items-center justify-between col-span-3">
           <div className="flex flex-col gap-1">
             <h1 className="text-sm font-semibold uppercase">LLM Poker</h1>
             <p className="text-xs text-neutral-500 max-w-sm">A simple 6 handed poker game to test the reasoning capabilities of LLMs.</p>
-            <p className="text-xs text-neutral-200 max-w-sm">Built by <a href="https://twitter.com/dqnamo" target="_blank" className="text-teal-500 hover:text-teal-400">JP</a></p>
           </div>
+
+          <FramedLink href="/history">
+            <p>Historical Data</p>
+          </FramedLink>
         </div>
 
         {isLoading ? (
@@ -287,7 +293,7 @@ const Table = ({cards, pot}: {cards: string[], pot: number}) => {
 };
 
 const CornerBorders = () => {
-  return (
+  return (    
     <>  
     <div className="border-r-3 border-t-3 border-neutral-800 h-4 w-4 absolute -top-1 -right-1"/>
     <div className="border-l-3 border-b-3 border-neutral-800 h-4 w-4 absolute -bottom-1 -left-1"/>
