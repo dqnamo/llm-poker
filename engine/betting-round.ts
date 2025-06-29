@@ -161,10 +161,22 @@ async function getPlayerAction(
     position = `Middle Position (MP${positionFromButton - 2})`;
   }
   
+  const betToCall = highestBet - hand.amount;
+  
+  // Log big blind scenario for debugging
+  if (position === "Big Blind" && betToCall === 0) {
+    logger.log("Big blind can check", {
+      playerId: hand.playerId,
+      highestBet,
+      handAmount: hand.amount,
+      betToCall
+    });
+  }
+  
   const toolCalls = await generateAction({
     playerId: hand.playerId,
     cards: hand.cards,
-    bet: highestBet - hand.amount, // Amount needed to call
+    bet: betToCall, // Amount needed to call
     context,
     pot,
     playerStack: player.stack,
@@ -210,6 +222,17 @@ async function processAction({
       const betAmount = action.args.amount;
       const actualBet = Math.min(betAmount, player.stack);
       
+      // Log betting details
+      logger.log("Player betting", {
+        playerId: hand.playerId,
+        requestedBet: betAmount,
+        actualBet,
+        currentHandAmount: hand.amount,
+        highestBet,
+        playerStack: player.stack,
+        totalAfterBet: hand.amount + actualBet
+      });
+      
       // Record the action
       await db.transact(
         db.tx.actions[actionId].update({
@@ -243,14 +266,20 @@ async function processAction({
       if (hand.amount > highestBet) {
         highestBet = hand.amount;
         markOthersAsNotActed(hands, hand.playerId);
+        
+        // Determine if this is a call or raise for logging
+        const previousHighest = highestBet - (hand.amount - actualBet);
+        if (hand.amount > previousHighest) {
+          context.push(`${hand.playerId} raised to ${hand.amount} (bet ${actualBet} chips)`);
+        }
+      } else if (hand.amount === highestBet) {
+        context.push(`${hand.playerId} called ${actualBet}`);
       }
       
       // Check if player is all-in
       if (newStack === 0) {
         hand.allIn = true;
         context.push(`${hand.playerId} went all-in with ${actualBet}`);
-      } else {
-        context.push(`${hand.playerId} bet ${actualBet}`);
       }
       
       break;

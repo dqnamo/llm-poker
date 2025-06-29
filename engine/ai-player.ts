@@ -36,6 +36,8 @@ export async function generateAction({
 }): Promise<ActionResult[]> {
   
   // Define available tools based on the current bet
+  // If bet is 0, player can check or bet
+  // If bet > 0, player must call, raise, or fold
   const toolsAvailable = bet === 0 ? {
     bet: tool({
       description: 'Bet a certain amount of money',
@@ -51,11 +53,17 @@ export async function generateAction({
       }),
     }),
   } : {
-    bet: tool({
-      description: 'Bet a certain amount of money (call, raise, or all-in)',
+    call: tool({
+      description: 'Call the current bet (match what others have bet)',
       parameters: z.object({
-        amount: z.number().describe('The amount to bet'),
-        reasoning: z.string().describe('The reasoning for the bet'),
+        reasoning: z.string().describe('The reasoning for the call'),
+      }),
+    }),
+    raise: tool({
+      description: 'Raise the bet (bet more than the current bet)',
+      parameters: z.object({
+        raiseAmount: z.number().describe('The amount to raise BY (not the total bet)'),
+        reasoning: z.string().describe('The reasoning for the raise'),
       }),
     }),
     fold: tool({
@@ -87,7 +95,13 @@ export async function generateAction({
     return validateAction(toolCalls, bet, playerStack);
   } catch (error) {
     console.error(`Error generating action for ${playerId}:`, error);
-    // Default to folding on error
+    // Default to checking if no bet required, otherwise fold
+    if (bet === 0) {
+      return [{
+        toolName: "check",
+        args: { reasoning: "Error occurred while making decision. Checking." }
+      }];
+    }
     return [{
       toolName: "fold",
       args: { reasoning: "Error occurred while making decision. Folding for safety." }
@@ -117,6 +131,13 @@ function buildPokerPrompt({
   minBet: number;
   position: string;
 }): string {
+  // Special handling for when no additional bet is required
+  const actionOptions = bet === 0 
+    ? `- You can CHECK (free - you've already matched the current bet) or BET (minimum ${minBet})`
+    : `- You can CALL to match the current bet (costs ${Math.min(bet, playerStack)} chips)
+- You can RAISE by betting MORE than the current bet (specify how much to raise BY, not total)
+- You can FOLD to exit the hand`;
+
   return `
 You are a poker player in a Texas Hold'em game.
 Your player ID: ${playerId}
@@ -124,20 +145,20 @@ Your hole cards: ${cards.join(", ")}
 Your position: ${position}
 
 CURRENT GAME STATE:
-- Current bet to call: ${bet}
+- Amount you need to call: ${bet} chips ${bet === 0 ? '(you have already matched the current bet)' : ''}
 - Current pot size: ${pot}
 - Your chip stack: ${playerStack}
 - Minimum bet: ${minBet}
 
-BETTING RULES:
-- To stay in the hand when bet > 0, you must bet at least ${bet} (call)
-- To raise, bet more than ${bet}
+AVAILABLE ACTIONS:
+${actionOptions}
 - You cannot bet more than ${playerStack} (your stack)
-- If you don't have enough chips to call, you can go all-in with your remaining stack
-- If bet = 0, you can check (free) or bet (minimum ${minBet})
+- If you don't have enough chips to call, you'll automatically go all-in
 
 GAME CONTEXT:
 ${context.join("\n")}
+
+${position === "Big Blind" && bet === 0 ? "Note: As the big blind, you've already posted your blind. Since no one has raised, you can check for free or bet if you have a strong hand." : ""}
 `;
 }
 
@@ -159,7 +180,55 @@ function validateAction(
 
   const action = toolCalls[0];
   
-  // Validate bet action
+  // Handle call action
+  if (action.toolName === "call") {
+    const callAmount = Math.min(currentBet, playerStack);
+    return [{
+      toolName: "bet",
+      args: {
+        amount: callAmount,
+        reasoning: action.args.reasoning
+      }
+    }];
+  }
+  
+  // Handle raise action
+  if (action.toolName === "raise") {
+    const raiseBy = action.args.raiseAmount;
+    const totalBet = currentBet + raiseBy;
+    
+    // Can't bet more than stack
+    if (totalBet > playerStack) {
+      // Go all-in if trying to raise more than stack
+      return [{
+        toolName: "bet",
+        args: {
+          amount: playerStack,
+          reasoning: `Going all-in with ${playerStack} (wanted to raise but insufficient stack)`
+        }
+      }];
+    }
+    
+    // Ensure raise is at least the minimum bet
+    if (raiseBy < GAME_CONFIG.MIN_BET) {
+      return [{
+        toolName: "fold",
+        args: {
+          reasoning: `Invalid raise amount ${raiseBy} (less than minimum ${GAME_CONFIG.MIN_BET}). Forced to fold.`
+        }
+      }];
+    }
+    
+    return [{
+      toolName: "bet",
+      args: {
+        amount: totalBet,
+        reasoning: action.args.reasoning
+      }
+    }];
+  }
+  
+  // Validate bet action (only used when current bet is 0)
   if (action.toolName === "bet") {
     const betAmount = action.args.amount;
     
@@ -173,23 +242,12 @@ function validateAction(
       }];
     }
     
-    // Must bet at least the current bet to stay in
-    if (betAmount < currentBet && playerStack >= currentBet) {
+    // Must bet at least the minimum when opening
+    if (currentBet === 0 && betAmount < GAME_CONFIG.MIN_BET) {
       return [{
-        toolName: "fold",
+        toolName: "check",
         args: { 
-          reasoning: `Bet of ${betAmount} is less than required ${currentBet}. Forced to fold.` 
-        }
-      }];
-    }
-    
-    // If can't afford full bet, it's an all-in
-    if (betAmount < currentBet && playerStack < currentBet) {
-      return [{
-        toolName: "bet",
-        args: {
-          amount: playerStack,
-          reasoning: `Going all-in with ${playerStack} (cannot afford full bet of ${currentBet})`
+          reasoning: `Bet of ${betAmount} is less than minimum ${GAME_CONFIG.MIN_BET}. Checking instead.` 
         }
       }];
     }
