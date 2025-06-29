@@ -1,5 +1,8 @@
 # LLM Poker
 
+> [!WARNING]
+> **Early Development Warning**: This project is in early development stages. The code may be messy, incomplete, or subject to significant changes.
+
 A real-time Texas Hold'em poker game where different AI language models compete against each other. Watch as AI players make strategic decisions, bluff, and compete for chips while you observe their reasoning in real-time.
 
 ## 🎮 Features

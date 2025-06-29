@@ -230,9 +230,15 @@ const Player = ({player, cards, active, button, lastAction,data, equity}: {playe
               
               {lastAction?.reasoning && (lastAction as any)?.gameRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.id ? (
                 <>
-                {(lastAction.type !== 'bet' || (lastAction as any)?.bettingRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds[data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds.length - 1]?.id) && (
+                {(lastAction.type !== 'bet' || 
+                  (lastAction as any)?.bettingRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds[data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds.length - 1]?.id ||
+                  lastAction.reasoning?.includes('Posted the')) && (
                   <div className="flex flex-row items-center gap-2">
-                  <div className="text-xs  text-neutral-200 font-mono uppercase font-medium">{lastAction?.type}</div>
+                  <div className="text-xs  text-neutral-200 font-mono uppercase font-medium">
+                    {lastAction.reasoning?.includes('Posted the small blind') ? 'SMALL BLIND' :
+                     lastAction.reasoning?.includes('Posted the big blind') ? 'BIG BLIND' :
+                     lastAction?.type}
+                  </div>
               
                   {Number(lastAction?.amount) > 0 && (
                     <div className="flex flex-row items-center gap-1">
