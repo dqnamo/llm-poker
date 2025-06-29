@@ -34,7 +34,7 @@ const Card = ({ value, className = "", faceDown = false }: CardProps) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.2 }}
-      className={`relative border border-neutral-900 flex items-center justify-center ${className}`}
+      className={`relative border border-neutral-900 bg-neutral-950 flex items-center justify-center ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

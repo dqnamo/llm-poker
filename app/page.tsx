@@ -121,13 +121,13 @@ export default function Home() {
         ) : data?.games[0] ? (
           <div className="grid grid-cols-3 border-neutral-900 border relative col-span-3 lg:col-span-2">
             <CornerBorders />
-            <Player player={data?.games[0].players[0]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[0]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 0} lastAction={data?.games[0].players[0]?.actions?.[data?.games[0].players[0]?.actions?.length - 1]} data={data} equity={equity} />
-            <Player player={data?.games[0].players[1]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[1]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 1} lastAction={data?.games[0].players[1]?.actions?.[data?.games[0].players[1]?.actions?.length - 1]} data={data} equity={equity}/>
-            <Player player={data?.games[0].players[2]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[2]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 2} lastAction={data?.games[0].players[2]?.actions?.[data?.games[0].players[2]?.actions?.length - 1]} data={data} equity={equity}/>
+            <Player player={data?.games[0].players[0]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[0]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 0} button={data?.games[0].buttonPosition === 0} lastAction={data?.games[0].players[0]?.actions?.[data?.games[0].players[0]?.actions?.length - 1]} data={data} equity={equity} />
+            <Player player={data?.games[0].players[1]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[1]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 1} button={data?.games[0].buttonPosition === 1} lastAction={data?.games[0].players[1]?.actions?.[data?.games[0].players[1]?.actions?.length - 1]} data={data} equity={equity}/>
+            <Player player={data?.games[0].players[2]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[2]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 2} button={data?.games[0].buttonPosition === 2} lastAction={data?.games[0].players[2]?.actions?.[data?.games[0].players[2]?.actions?.length - 1]} data={data} equity={equity}/>
             <Table cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.communityCards.cards} pot={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.pot ?? 0} />
-            <Player player={data?.games[0].players[5]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[5]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 5} lastAction={data?.games[0].players[5]?.actions?.[data?.games[0].players[5]?.actions?.length - 1]} data={data} equity={equity}/>
-            <Player player={data?.games[0].players[4]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[4]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 4} lastAction={data?.games[0].players[4]?.actions?.[data?.games[0].players[4]?.actions?.length - 1]} data={data} equity={equity}/>
-            <Player player={data?.games[0].players[3]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[3]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 3} lastAction={data?.games[0].players[3]?.actions?.[data?.games[0].players[3]?.actions?.length - 1]} data={data} equity={equity}/>
+            <Player player={data?.games[0].players[5]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[5]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 5} button={data?.games[0].buttonPosition === 5} lastAction={data?.games[0].players[5]?.actions?.[data?.games[0].players[5]?.actions?.length - 1]} data={data} equity={equity}/>
+            <Player player={data?.games[0].players[4]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[4]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 4} button={data?.games[0].buttonPosition === 4} lastAction={data?.games[0].players[4]?.actions?.[data?.games[0].players[4]?.actions?.length - 1]} data={data} equity={equity}/>
+            <Player player={data?.games[0].players[3]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[3]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 3} button={data?.games[0].buttonPosition === 3} lastAction={data?.games[0].players[3]?.actions?.[data?.games[0].players[3]?.actions?.length - 1]} data={data} equity={equity}/>
           </div>
         ) : (
           <div className="grid grid-cols-3 border-neutral-900 border relative col-span-3 lg:col-span-2">
@@ -156,7 +156,7 @@ export default function Home() {
   );
 }
 
-const Player = ({player, cards, active, lastAction,data, equity}: {player: InstaQLEntity<AppSchema, "players">, cards?: string[], active?: boolean, lastAction?: InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>, data: any, equity: EquityResult[]}) => {
+const Player = ({player, cards, active, button, lastAction,data, equity}: {player: InstaQLEntity<AppSchema, "players">, cards?: string[], active?: boolean, button?: boolean, lastAction?: InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>, data: any, equity: EquityResult[]}) => {
   const [showThoughts, setShowThoughts] = useState(false);
 
   if (!player) {
@@ -182,6 +182,11 @@ const Player = ({player, cards, active, lastAction,data, equity}: {player: Insta
                 />
               </div>
             </div>
+            {button && (
+              <div className="h-2 w-2 bg-white">
+
+              </div>
+            )}
           </div>
           <div className="flex flex-row items-center gap-1">
             {/* get the last hand for the player */}
@@ -257,10 +262,10 @@ const Player = ({player, cards, active, lastAction,data, equity}: {player: Insta
 
 const Table = ({cards, pot}: {cards: string[], pot: number}) => {
   return (
-    <div className="border p-20 border-neutral-900 col-span-6">
+    <div className="border p-20 border-neutral-900 col-span-6 bg-pattern">
       <div className="flex flex-col items-center justify-center">
         {Number(pot) > 0 && (
-            <div className="flex flex-row items-center gap-1">
+            <div className="flex flex-row items-center gap-1 bg-neutral-950 p-2">
               <div className="text-lg text-teal-500">¤</div>
               <div className="text-xs text-neutral-400">
                 <NumberFlow
