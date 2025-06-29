@@ -6,11 +6,12 @@ import { id, i, init, InstaQLEntity } from "@instantdb/react";
 import schema, { AppSchema } from "@/instant.schema";
 import NumberFlow from '@number-flow/react'
 import { motion, Reorder } from "motion/react"
-import { CaretDown, CaretUp, CircleNotch } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, ChartScatterIcon, CircleNotch, GithubLogoIcon } from "@phosphor-icons/react";
 import { calculateEquity, EquityResult } from 'poker-odds';
 import Button from "./components/Button";
 import Link from "next/link";
 import FramedLink from "./components/FramedLink";
+import PlayerModal from "./components/PlayerModal";
 
 // ID for app: LLM Poker
 const APP_ID = process.env.NEXT_PUBLIC_INSTANT_APP_ID || "";
@@ -108,9 +109,17 @@ export default function Home() {
             <p className="text-xs text-neutral-500 max-w-sm">A simple 6 handed poker game to test the reasoning capabilities of LLMs.</p>
           </div>
 
-          <FramedLink href="/history">
-            <p>Historical Data</p>
-          </FramedLink>
+
+          <div className="flex flex-row items-center gap-2">
+            <FramedLink href="https://github.com/dqnamo/llm-poker" target="_blank">
+              <GithubLogoIcon size={16} />
+              <p>Github</p>
+            </FramedLink>
+            <FramedLink href="/history">
+              <ChartScatterIcon size={16} />
+              <p>Historical Data</p>
+            </FramedLink>
+          </div>
         </div>
 
         {isLoading ? (
@@ -163,8 +172,6 @@ export default function Home() {
 }
 
 const Player = ({player, cards, active, button, lastAction,data, equity}: {player: InstaQLEntity<AppSchema, "players">, cards?: string[], active?: boolean, button?: boolean, lastAction?: InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>, data: any, equity: EquityResult[]}) => {
-  const [showThoughts, setShowThoughts] = useState(false);
-
   if (!player) {
     return <LoadingPlayer />;
   }
@@ -175,94 +182,82 @@ const Player = ({player, cards, active, button, lastAction,data, equity}: {playe
   const winPercentage = playerEquity ? (playerEquity.wins / playerEquity.count) * 100 : null;
 
   return (
-    <div className={`bg-neutral-900 p-px overflow-hidden relative ${active ? "border-animation" : ""} h-full flex flex-col ${lastActionFolded ? "opacity-50" : ""}`}>
-      <div className={`relative bg-neutral-950 grid grid-cols-1 divide-neutral-900 flex-1`}>
-        <div className="flex flex-col lg:flex-row items-start gap-4 justify-between p-4 h-full">
-          <div className="flex flex-col">
-            <div className="text-xs font-semibold">{player?.name}</div>
-            <div className="flex flex-row items-center gap-1">
-              <div className="text-lg text-teal-500">¤</div>
-              <div className="text-xs text-neutral-400">
-                <NumberFlow
-                  value={player?.stack ?? 0}
-                />
-              </div>
-            </div>
-            {button && (
-              <div className="h-2 w-2 bg-white">
-
-              </div>
-            )}
-          </div>
-          <div className="flex flex-row items-center gap-1">
-            {/* get the last hand for the player */}
-            {cards && (
-              cards.map((card) => (
-                <Card key={card} value={card} className="w-8 h-11 sm:w-8 sm:h-11" />
-              ))
-            )}
-          </div>
-
-
-        </div>
-
-          <div className="flex flex-col mt-auto">
-            {winPercentage !== null && !lastActionFolded && (
-              <div>
-                <p className="text-xs text-neutral-500 px-4">
-                  {winPercentage?.toFixed(1)}%
-                </p>
-              <div className="h-px bg-neutral-900">
-                <div className="h-px bg-green-500" style={{width: `${winPercentage}%`}}>
+    <PlayerModal player={player} cards={cards} button={button} data={data}>
+      <div className={`p-px bg-neutral-900 overflow-hidden relative ${active ? "border-animation" : ""} h-full flex flex-col ${lastActionFolded ? "opacity-50" : ""} transition-colors`}>
+        <div className={`relative grid grid-cols-1 divide-neutral-900 flex-1 bg-neutral-950 hover:bg-neutral-900`}>
+          <div className="flex flex-col lg:flex-row items-start gap-4 justify-between p-4 h-full">
+            <div className="flex flex-col">
+              <div className="text-xs font-semibold">{player?.name}</div>
+              <div className="flex flex-row items-center gap-1">
+                <div className="text-lg text-teal-500">¤</div>
+                <div className="text-xs text-neutral-400">
+                  <NumberFlow
+                    value={player?.stack ?? 0}
+                  />
                 </div>
               </div>
-              </div>
-            )}
-            <div className="flex flex-col p-4 shrink-0 gap-1">
-            
-            {lastAction?.reasoning && (lastAction as any)?.gameRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.id ? (
-              <>
-              {(lastAction.type !== 'bet' || (lastAction as any)?.bettingRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds[data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds.length - 1]?.id) && (
-                <div className="flex flex-row items-center gap-2">
-                <div className="text-xs  text-neutral-200 font-mono uppercase font-medium">{lastAction?.type}</div>
-            
-                {Number(lastAction?.amount) > 0 && (
-                  <div className="flex flex-row items-center gap-1">
-                    <div className="text-lg text-teal-500">¤</div>
-                    <div className="text-xs text-neutral-400">
-                      <NumberFlow
-                        value={lastAction?.amount ?? 0}
-                      />
-                    </div>
-                  </div>
-                )}
+              {button && (
+                <div className="h-2 w-2 bg-white">
+
                 </div>
               )}
-            
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => setShowThoughts(!showThoughts)}
-                  className="text-xs text-neutral-500 hover:text-neutral-300 cursor-pointer text-left"
-                >
-                  {showThoughts ? 'Hide Thoughts' : 'Show Thoughts'}
-                </button>
-                {showThoughts && (
-                  <div className="text-xs text-neutral-400 bg-neutral-900 p-2 rounded border border-neutral-800">
-                    {lastAction.reasoning}
+            </div>
+            <div className="flex flex-row items-center gap-1">
+              {/* get the last hand for the player */}
+              {cards && (
+                cards.map((card) => (
+                  <Card key={card} value={card} className="w-8 h-11 sm:w-8 sm:h-11" />
+                ))
+              )}
+            </div>
+
+
+          </div>
+
+            <div className="flex flex-col mt-auto">
+              {winPercentage !== null && !lastActionFolded && (
+                <div>
+                  <p className="text-xs text-neutral-500 px-4">
+                    {winPercentage?.toFixed(1)}%
+                  </p>
+                <div className="h-px bg-neutral-900">
+                  <div className="h-px bg-green-500" style={{width: `${winPercentage}%`}}>
+                  </div>
+                </div>
+                </div>
+              )}
+              <div className="flex flex-col p-4 shrink-0 gap-1">
+              
+              {lastAction?.reasoning && (lastAction as any)?.gameRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.id ? (
+                <>
+                {(lastAction.type !== 'bet' || (lastAction as any)?.bettingRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds[data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds.length - 1]?.id) && (
+                  <div className="flex flex-row items-center gap-2">
+                  <div className="text-xs  text-neutral-200 font-mono uppercase font-medium">{lastAction?.type}</div>
+              
+                  {Number(lastAction?.amount) > 0 && (
+                    <div className="flex flex-row items-center gap-1">
+                      <div className="text-lg text-teal-500">¤</div>
+                      <div className="text-xs text-neutral-400">
+                        <NumberFlow
+                          value={lastAction?.amount ?? 0}
+                        />
+                      </div>
+                    </div>
+                  )}
                   </div>
                 )}
+                </>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div className="text-xs  text-neutral-500 font-mono font-medium">Hasn't acted yet</div>
+            
+                </div>
+              )}
               </div>
-              </>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <div className="text-xs  text-neutral-500 font-mono font-medium">Hasn't acted yet</div>
-          
-              </div>
-            )}
             </div>
-          </div>
+        </div>
       </div>
-    </div>
+    </PlayerModal>
   );
 };
 
