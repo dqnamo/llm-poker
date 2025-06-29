@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Bebas_Neue, Barlow, Space_Grotesk, Geist_Mono } from "next/font/google";
 import Footer from "./components/Footer";
+import { PostHogProvider } from "./components/PostHogProvider";
 
 const bebasNeue = Bebas_Neue({
   variable: "--font-bebas-neue",
@@ -42,8 +43,10 @@ export default function RootLayout({
       <body
         className={`antialiased h-full ${geistMono.variable} flex flex-col`}
       >
-        {children}
-        <Footer />
+        <PostHogProvider>
+          {children}
+          <Footer />
+        </PostHogProvider>
       </body>
     </html>
   );
