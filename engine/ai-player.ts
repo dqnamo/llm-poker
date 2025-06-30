@@ -23,7 +23,8 @@ export async function generateAction({
   pot,
   playerStack,
   model,
-  position
+  position,
+  notes
 }: {
   playerId: string;
   cards: string[];
@@ -33,6 +34,7 @@ export async function generateAction({
   playerStack: number;
   model: string;
   position: string;
+  notes?: string;
 }): Promise<ActionResult[]> {
   
   // Define available tools based on the current bet
@@ -85,10 +87,12 @@ export async function generateAction({
         playerStack,
         context,
         minBet: GAME_CONFIG.MIN_BET,
-        position
+        position,
+        notes
       }),
       tools: toolsAvailable as any,
       toolChoice: "required",
+      maxTokens: 10000,
     });
 
     // Validate and return the action
@@ -120,7 +124,8 @@ function buildPokerPrompt({
   playerStack,
   context,
   minBet,
-  position
+  position,
+  notes
 }: {
   playerId: string;
   cards: string[];
@@ -130,6 +135,7 @@ function buildPokerPrompt({
   context: string[];
   minBet: number;
   position: string;
+  notes?: string;
 }): string {
   // Special handling for when no additional bet is required
   const actionOptions = bet === 0 
@@ -155,7 +161,10 @@ ${actionOptions}
 - You cannot bet more than ${playerStack} (your stack)
 - If you don't have enough chips to call, you'll automatically go all-in
 
-GAME CONTEXT:
+${notes ? `YOUR NOTES FROM PREVIOUS ROUNDS:
+${notes}
+
+` : ''}GAME CONTEXT:
 ${context.join("\n")}
 
 ${position === "Big Blind" && bet === 0 ? "Note: As the big blind, you've already posted your blind. Since no one has raised, you can check for free or bet if you have a strong hand." : ""}
@@ -254,4 +263,76 @@ function validateAction(
   }
 
   return [action];
+}
+
+/**
+ * Synthesize observations from a completed round
+ * @param params - Parameters including player info, round context, and existing notes
+ * @returns Updated notes incorporating new observations
+ */
+export async function synthesizeRoundObservations({
+  playerId,
+  model,
+  roundContext,
+  existingNotes,
+  myCards,
+  communityCards,
+  finalPot,
+  winners,
+  playerActions
+}: {
+  playerId: string;
+  model: string;
+  roundContext: string[];
+  existingNotes?: string;
+  myCards: string[];
+  communityCards: string[];
+  finalPot: number;
+  winners: { playerId: string; amount: number }[];
+  playerActions: { playerId: string; action: string; reasoning: string }[];
+}): Promise<string> {
+  const prompt = `
+You are a poker player who just finished a round of Texas Hold'em.
+Your player ID: ${playerId}
+
+ROUND SUMMARY:
+- Your hole cards: ${myCards.join(", ")}
+- Community cards: ${communityCards.join(", ")}
+- Final pot: ${finalPot}
+- Winners: ${winners.map(w => `Player ${w.playerId} won ${w.amount}`).join(", ")}
+
+KEY ACTIONS FROM THIS ROUND:
+${playerActions.map(a => `- Player ${a.playerId}: ${a.action} (Reasoning: "${a.reasoning}")`).join("\n")}
+
+FULL ROUND CONTEXT:
+${roundContext.join("\n")}
+
+YOUR EXISTING NOTES:
+${existingNotes || "No previous notes."}
+
+Based on what happened in this round, synthesize your observations. Focus on:
+1. Patterns in other players' betting behavior
+2. Tells or tendencies you noticed (who bluffs, who plays tight, etc.)
+3. Successful strategies you or others used
+4. Mistakes to avoid in future rounds
+5. Any other insights that would help you play better in future rounds
+
+Keep your notes concise and actionable. Update your existing notes with new insights, don't just append - integrate and refine your understanding.
+
+Respond with ONLY the updated notes text (no explanations or meta-commentary).`;
+
+  try {
+    const { text } = await generateText({
+      model: openrouter.chat('google/gemini-2.5-flash'),
+      prompt,
+      maxTokens: 500,
+      temperature: 0.7,
+    });
+
+    return text.trim();
+  } catch (error) {
+    console.error(`Error synthesizing observations for ${playerId}:`, error);
+    // Return existing notes if synthesis fails
+    return existingNotes || "";
+  }
 } 

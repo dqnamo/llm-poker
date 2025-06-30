@@ -37,7 +37,7 @@ export default function Home() {
           gameRound: {},
           bettingRound: {}
         },
-        transactions: {}
+        transactions: {},
       },
       gameRounds: {
         bettingRounds: {},

@@ -25,6 +25,7 @@ const _schema = i.schema({
       status: i.string(),
       createdAt: i.date(),
       model: i.string(),
+      notes: i.string().optional(),
     }),
     gameRounds: i.entity({
       roundNumber: i.number(),
@@ -45,7 +46,7 @@ const _schema = i.schema({
     actions: i.entity({
       type: i.string(),
       amount: i.number(),
-      reasoning: i.string(),
+      reasoning: i.string().indexed(),
       createdAt: i.date(),
     }),
     transactions: i.entity({

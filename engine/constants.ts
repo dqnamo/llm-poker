@@ -13,8 +13,8 @@ export const GAME_CONFIG = {
 
 export const AI_MODELS = [
   {
-    name: "Gemini 2.0 Flash",
-    model: "google/gemini-2.0-flash-001",
+    name: "Gemini 2.5 Flash",
+    model: "google/gemini-2.5-flash",
   },
   {
     name: "Gemini 2.5 Pro",

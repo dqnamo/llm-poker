@@ -12,6 +12,7 @@ interface PlayerModalProps {
   player: InstaQLEntity<AppSchema, "players"> & {
     actions?: Array<InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>>;
     transactions?: Array<InstaQLEntity<AppSchema, "transactions">>;
+    notes?: string;
   };
   cards?: string[];
   button?: boolean;
@@ -189,6 +190,29 @@ export default function PlayerModal({ player, cards, button, data, children }: P
                     )}
                   </div>
                 </div>
+
+                {/* AI Notes/Observations */}
+                {player.notes && (
+                  <div className="border-b border-neutral-900">
+                    <div className="flex flex-col p-6 border-neutral-900">
+                      <h1 className="text-sm font-semibold uppercase tracking-wider text-neutral-100">AI Observations</h1>
+                      <p className="text-xs text-neutral-500 mt-1">Accumulated insights from previous rounds</p>
+                    </div>
+                    
+                    <div className="p-6 bg-neutral-900/30">
+                      <div className="relative p-4 bg-neutral-950 border border-neutral-800/50">
+                        <div className="border-r-2 border-t-2 border-neutral-700 h-3 w-3 absolute -top-1 -right-1"/>
+                        <div className="border-l-2 border-b-2 border-neutral-700 h-3 w-3 absolute -bottom-1 -left-1"/>
+                        <div className="border-l-2 border-t-2 border-neutral-700 h-3 w-3 absolute -top-1 -left-1"/>
+                        <div className="border-r-2 border-b-2 border-neutral-700 h-3 w-3 absolute -bottom-1 -right-1"/>
+                        
+                        <p className="text-xs text-neutral-300 leading-relaxed whitespace-pre-wrap">
+                          {player.notes}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Action Timeline */}
                 <div>

@@ -173,6 +173,19 @@ async function getPlayerAction(
     });
   }
   
+  // Get player's notes
+  const playerData = await db.query({
+    players: {
+      $: {
+        where: {
+          id: hand.playerId
+        }
+      }
+    }
+  });
+  
+  const notes = playerData?.players?.[0]?.notes;
+  
   const toolCalls = await generateAction({
     playerId: hand.playerId,
     cards: hand.cards,
@@ -181,7 +194,8 @@ async function getPlayerAction(
     pot,
     playerStack: player.stack,
     model: player.model,
-    position
+    position,
+    notes
   });
   
   return toolCalls[0]; // Return first action

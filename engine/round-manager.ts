@@ -8,6 +8,7 @@ import { GAME_CONFIG } from './constants';
 import { db, clearActivePosition } from './game-setup';
 import { performBettingRound, createBettingRound } from './betting-round';
 import { performShowdown } from './showdown';
+import { synthesizeRoundObservations } from './ai-player';
 import { 
   getPlayerPosition, 
   getPlayerIdAtPosition,
@@ -77,6 +78,16 @@ export async function performRound({
   
   // Clear active position
   await clearActivePosition(gameId);
+  
+  // Synthesize observations for each player
+  await synthesizePlayerObservations(
+    gameId,
+    roundId,
+    players,
+    hands,
+    context,
+    deck.slice(-5) // Get the community cards (last 5 cards dealt)
+  );
   
   return { roundId, hands, context };
 }
@@ -517,4 +528,105 @@ async function handlePotDistribution(
       });
     }
   }
+}
+
+/**
+ * Synthesize observations for all players after a round
+ */
+async function synthesizePlayerObservations(
+  gameId: string,
+  roundId: string,
+  players: Record<string, Player>,
+  hands: Record<string, Hand>,
+  context: string[],
+  communityCards: string[]
+): Promise<void> {
+  logger.log("Synthesizing player observations", { roundId });
+  
+  // Get all actions from this round
+  const roundData = await db.query({
+    gameRounds: {
+      $: {
+        where: {
+          id: roundId
+        }
+      },
+      actions: {
+        player: {},
+      },
+      transactions: {
+        player: {},
+      }
+    }
+  });
+  
+  const round = roundData?.gameRounds?.[0];
+  if (!round) return;
+  
+  // Extract player actions for synthesis
+  const playerActions = round.actions?.map((action: any) => ({
+    playerId: action.player?.id || '',
+    action: action.type,
+    reasoning: action.reasoning
+  })) || [];
+  
+  // Calculate winners from transactions
+  const winners = round.transactions
+    ?.filter((t: any) => t.credit)
+    .map((t: any) => ({
+      playerId: t.player?.id || '',
+      amount: t.amount
+    })) || [];
+  
+  const finalPot = round.pot || 0;
+  
+  // Synthesize observations for all players in parallel
+  const synthesisPromises = Object.entries(players).map(async ([playerId, player]) => {
+    try {
+      // Get player's current notes
+      const playerData = await db.query({
+        players: {
+          $: {
+            where: {
+              id: playerId
+            }
+          }
+        }
+      });
+      
+      const existingNotes = playerData?.players?.[0]?.notes;
+      const playerHand = Object.values(hands).find(h => h.playerId === playerId);
+      
+      if (!playerHand) return;
+      
+      // Synthesize new observations
+      const updatedNotes = await synthesizeRoundObservations({
+        playerId,
+        model: player.model,
+        roundContext: context,
+        existingNotes,
+        myCards: playerHand.cards,
+        communityCards,
+        finalPot,
+        winners,
+        playerActions
+      });
+      
+      // Update player notes in database
+      await db.transact(
+        db.tx.players[playerId].update({
+          notes: updatedNotes
+        })
+      );
+      
+      logger.log("Updated notes for player", { playerId, notesLength: updatedNotes.length });
+    } catch (error) {
+      logger.error(`Failed to synthesize observations for player ${playerId}`, { error });
+    }
+  });
+  
+  // Wait for all synthesis operations to complete
+  await Promise.all(synthesisPromises);
+  
+  logger.log("Completed synthesizing observations for all players");
 } 
