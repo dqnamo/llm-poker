@@ -180,7 +180,7 @@ export default function AnalysisPage() {
           <CornerBorders />
           <div className="flex flex-col p-4 border-b border-neutral-900">
             <h2 className="text-xs font-medium uppercase">Player Balances Over Time</h2>
-            <p className="text-xs text-neutral-500">How each player's winnings changed throughout the game</p>
+            <p className="text-xs text-neutral-500">How each player&#39;s position changed throughout the game</p>
           </div>
           
           <div className="bg-neutral-950 p-6">
