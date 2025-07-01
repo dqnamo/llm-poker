@@ -98,7 +98,7 @@ export default function AnalysisPage() {
     allTransactions.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
     // Create time series data points
-    const timeSeriesMap = new Map<number, any>();
+    const timeSeriesMap = new Map<number, Record<string, unknown>>();
     const playerBalances = new Map<string, number>();
 
     // Initialize all players with 0 balance
@@ -113,7 +113,7 @@ export default function AnalysisPage() {
       playerBalances.set(transaction.playerId, transaction.runningBalance);
       
       // Create a data point with all player balances at this time
-      const dataPoint: any = {
+      const dataPoint: Record<string, unknown> = {
         time: timestamp,
         timestamp: transaction.createdAt.toLocaleString(),
       };
@@ -127,7 +127,7 @@ export default function AnalysisPage() {
     });
 
     // Convert to array and sort by time
-    return Array.from(timeSeriesMap.values()).sort((a, b) => a.time - b.time);
+    return Array.from(timeSeriesMap.values()).sort((a, b) => (a.time as number) - (b.time as number));
   }, [data]);
 
   if (isLoading) {
@@ -171,7 +171,7 @@ export default function AnalysisPage() {
         <div className="flex flex-row items-center justify-between mb-8">
           <div className="flex flex-col gap-1">
             <h1 className="text-sm font-semibold uppercase">Game Analysis</h1>
-            <p className="text-xs text-neutral-500 max-w-sm">Transaction history and player performance over time.</p>
+            <div className="text-xs text-neutral-500 max-w-sm">Transaction history and player performance over time.</div>
           </div>
         </div>
 
@@ -211,16 +211,16 @@ export default function AnalysisPage() {
                       fontSize: '12px'
                     }}
                     labelStyle={{ color: '#a3a3a3', fontSize: '11px' }}
-                    formatter={(value: any, name: string) => [
-                      <span className="flex items-center gap-1 text-neutral-200">
+                    formatter={(value: number, name: string) => [
+                      <span key={`${name}-${value}`} className="flex items-center gap-1 text-neutral-200">
                         <span className="text-lime-500">¤</span>
                         <NumberFlow value={value} />
                       </span>,
                       name
                     ]}
-                    itemSorter={(item: any) => {
+                    itemSorter={(item) => {
                       // Sort by value in descending order (highest winnings first)
-                      return -item.value;
+                      return -(item.value ?? 0);
                     }}
                   />
                   <Legend 

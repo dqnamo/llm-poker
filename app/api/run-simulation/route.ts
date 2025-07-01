@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { startCustomGame } from '@/trigger/start-custom-game';
 import { id } from '@instantdb/admin';
-import { db } from '@/engine/game-setup';
 
 export async function POST(request: NextRequest) {
   try {

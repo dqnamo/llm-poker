@@ -16,7 +16,16 @@ interface PlayerModalProps {
   };
   cards?: string[];
   button?: boolean;
-  data: any;
+  data: {
+    games?: Array<{
+      gameRounds?: Array<InstaQLEntity<AppSchema, "gameRounds"> & {
+        id: string;
+        communityCards?: {
+          cards?: string[];
+        };
+      }>;
+    }>;
+  };
   children: React.ReactNode;
 }
 
@@ -51,16 +60,16 @@ export default function PlayerModal({ player, cards, button, data, children }: P
 
   // Get all actions for this player across all game rounds
   const playerActions = player.actions || [];
-  const gameRounds = data?.games[0]?.gameRounds || [];
+  const gameRounds = data?.games?.[0]?.gameRounds || [];
 
   // Group actions by game round
-  const actionsByRound = gameRounds.map((round: any) => {
-    const roundActions = playerActions.filter((action: any) => action.gameRound?.id === round.id);
+  const actionsByRound = gameRounds.map((round: InstaQLEntity<AppSchema, "gameRounds"> & { communityCards?: { cards?: string[] } }) => {
+    const roundActions = playerActions.filter((action: InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>) => action.gameRound?.id === round.id);
     return {
       round,
       actions: roundActions
     };
-  }).filter((group: any) => group.actions.length > 0);
+  }).filter((group: { round: InstaQLEntity<AppSchema, "gameRounds"> & { communityCards?: { cards?: string[] } }, actions: Array<InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>> }) => group.actions.length > 0);
 
   // Calculate total winnings
   const totalWinnings = player.transactions?.reduce((acc, tx) => {
@@ -236,7 +245,7 @@ export default function PlayerModal({ player, cards, button, data, children }: P
                         </div>
                         
                         <div className="space-y-4">
-                          {roundGroup.actions.map((action: any, actionIndex: number) => (
+                          {roundGroup.actions.map((action: InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>) => (
                             <div key={action.id} className="space-y-2">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs text-neutral-200 font-mono uppercase font-medium">
@@ -250,9 +259,9 @@ export default function PlayerModal({ player, cards, button, data, children }: P
                                     </div>
                                   </div>
                                 )}
-                                <span className="text-xs text-neutral-500 font-mono font-medium">
-                                  {action.bettingRound?.name || 'Unknown round'}
-                                </span>
+                                                              <span className="text-xs text-neutral-500 font-mono font-medium">
+                                {action.bettingRound?.type || 'Unknown round'}
+                              </span>
                               </div>
                               
                               {action.reasoning && (
