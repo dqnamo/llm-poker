@@ -1,7 +1,7 @@
 "use client";
 
 import Card from "../../components/Card";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { init, InstaQLEntity } from "@instantdb/react";
 import schema, { AppSchema } from "@/instant.schema";
 import NumberFlow from '@number-flow/react'
@@ -21,8 +21,8 @@ type hand = {
   cards: string[];
 }
 
-export default async function GamePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: gameId } = await params;
+export default function GamePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: gameId } = use(params);
   
   const {data, isLoading, error} = db.useQuery({
     games: {
