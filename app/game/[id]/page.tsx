@@ -21,8 +21,8 @@ type hand = {
   cards: string[];
 }
 
-export default function GamePage({ params }: { params: { id: string } }) {
-  const gameId = params.id;
+export default async function GamePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: gameId } = await params;
   
   const {data, isLoading, error} = db.useQuery({
     games: {
