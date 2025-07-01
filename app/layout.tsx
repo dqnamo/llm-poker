@@ -1,26 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Bebas_Neue, Barlow, Space_Grotesk, Geist_Mono } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 import Footer from "./components/Footer";
 import { PostHogProvider } from "./components/PostHogProvider";
-
-const bebasNeue = Bebas_Neue({
-  variable: "--font-bebas-neue",
-  subsets: ["latin"],
-  weight: ["400"],
-});
-
-const barlow = Barlow({
-  variable: "--font-barlow",
-  subsets: ["latin"],
-  weight: ["400"],
-});
-
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  weight: ["400"],
-});
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",

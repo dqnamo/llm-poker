@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { InstaQLEntity } from "@instantdb/react";
 import { AppSchema } from "@/instant.schema";
 import NumberFlow from '@number-flow/react';
-import { X, CaretRight, CaretUp, CaretDown } from "@phosphor-icons/react";
+import { X, CaretUp, CaretDown } from "@phosphor-icons/react";
 import Card from "./Card";
 
 interface PlayerModalProps {
@@ -231,7 +231,7 @@ export default function PlayerModal({ player, cards, button, data, children }: P
                   </div>
                   
                   <div className="flex flex-col divide-y divide-neutral-900">
-                    {actionsByRound.reverse().map((roundGroup: any, roundIndex: number) => (
+                    {actionsByRound.reverse().map((roundGroup: { round: InstaQLEntity<AppSchema, "gameRounds"> & { communityCards?: { cards?: string[] } }, actions: Array<InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>> }, roundIndex: number) => (
                       <div key={roundGroup.round.id} className="p-4">
                         <div className="flex items-center gap-2 mb-4">
                           <span className="text-xs font-medium uppercase text-neutral-400">Round {actionsByRound.length - roundIndex}</span>

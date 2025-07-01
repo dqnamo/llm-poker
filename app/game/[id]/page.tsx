@@ -2,14 +2,12 @@
 
 import Card from "../../components/Card";
 import { useEffect, useState } from "react";
-import { id, i, init, InstaQLEntity } from "@instantdb/react";
+import { init, InstaQLEntity } from "@instantdb/react";
 import schema, { AppSchema } from "@/instant.schema";
 import NumberFlow from '@number-flow/react'
-import { motion, Reorder } from "motion/react"
-import { CaretDown, CaretUp, ChartScatterIcon, CircleNotch, GithubLogoIcon, ArrowLeft } from "@phosphor-icons/react";
+import { Reorder } from "motion/react"
+import { CaretDown, CaretUp, ChartScatterIcon, CircleNotch, ArrowLeft } from "@phosphor-icons/react";
 import { calculateEquity, EquityResult } from 'poker-odds';
-import Button from "../../components/Button";
-import Link from "next/link";
 import FramedLink from "../../components/FramedLink";
 import PlayerModal from "../../components/PlayerModal";
 
@@ -68,7 +66,7 @@ export default function GamePage({ params }: { params: { id: string } }) {
         if (lastActionFolded) {
           return null;
         }
-        const hand = gameRound.hands.find((h: any) => h.player[0]?.id === p.id);
+        const hand = gameRound.hands.find((h: InstaQLEntity<AppSchema, "hands", { player: object }>) => h.player[0]?.id === p.id);
         return hand?.cards?.cards;
       }).filter(Boolean);
 
@@ -223,12 +221,20 @@ export default function GamePage({ params }: { params: { id: string } }) {
   );
 }
 
-const Player = ({player, cards, active, button, lastAction,data, equity}: {player: InstaQLEntity<AppSchema, "players">, cards?: string[], active?: boolean, button?: boolean, lastAction?: InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>, data: any, equity: EquityResult[]}) => {
+const Player = ({player, cards, active, button, lastAction,data, equity}: {player: InstaQLEntity<AppSchema, "players">, cards?: string[], active?: boolean, button?: boolean, lastAction?: InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>, data: {
+  games?: Array<{
+    gameRounds?: Array<InstaQLEntity<AppSchema, "gameRounds"> & {
+      id: string;
+      bettingRounds?: Array<InstaQLEntity<AppSchema, "bettingRounds"> & { id: string }>;
+      communityCards?: { cards?: string[] };
+    }>;
+  }>;
+}, equity: EquityResult[]}) => {
   if (!player) {
     return <LoadingPlayer />;
   }
 
-  const lastActionFolded = lastAction?.type === "fold" && lastAction?.gameRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.id;
+  const lastActionFolded = lastAction?.type === "fold" && lastAction?.gameRound?.id === data?.games?.[0]?.gameRounds?.[data.games[0].gameRounds.length - 1]?.id;
 
   const playerEquity = equity.find(e => cards && e.hand.length === cards.length && e.hand.every(c => cards.includes(c)));
   const winPercentage = playerEquity ? (playerEquity.wins / playerEquity.count) * 100 : null;
@@ -280,10 +286,9 @@ const Player = ({player, cards, active, button, lastAction,data, equity}: {playe
               )}
               <div className="flex flex-col p-4 shrink-0 gap-1">
               
-              {lastAction?.reasoning && (lastAction as any)?.gameRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.id ? (
+              {lastAction?.reasoning && (lastAction as InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>)?.gameRound?.id === data?.games?.[0]?.gameRounds?.[data.games[0].gameRounds.length - 1]?.id ? (
                 <>
                 {(lastAction.type !== 'bet' || 
-                  (lastAction as any)?.bettingRound?.id === data?.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds[data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds.length - 1]?.id ||
                   lastAction.reasoning?.includes('Posted the')) && (
                   <div className="flex flex-row items-center gap-2">
                   <div className="text-xs  text-neutral-200 font-mono uppercase font-medium">
@@ -307,7 +312,7 @@ const Player = ({player, cards, active, button, lastAction,data, equity}: {playe
                 </>
               ) : (
                 <div className="flex flex-col gap-2">
-                  <div className="text-xs  text-neutral-500 font-mono font-medium">Hasn't acted yet</div>
+                  <div className="text-xs  text-neutral-500 font-mono font-medium">Hasn&apos;t acted yet</div>
             
                 </div>
               )}
@@ -356,7 +361,7 @@ const CornerBorders = () => {
   );
 };
 
-const RankingItem = ({player}: {player: any}) => {
+const RankingItem = ({player}: {player: PlayerWithWinnings}) => {
   return (
     <div className="flex flex-col p-2 px-4">
       <div className="flex flex-row items-center gap-1 justify-between">
