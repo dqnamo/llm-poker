@@ -1,17 +1,17 @@
 "use client";
 
-import Card from "./components/Card";
+import Card from "../../components/Card";
 import { useEffect, useState } from "react";
 import { id, i, init, InstaQLEntity } from "@instantdb/react";
 import schema, { AppSchema } from "@/instant.schema";
 import NumberFlow from '@number-flow/react'
 import { motion, Reorder } from "motion/react"
-import { CaretDown, CaretUp, ChartScatterIcon, CircleNotch, GithubLogoIcon, Play } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, ChartScatterIcon, CircleNotch, GithubLogoIcon, ArrowLeft } from "@phosphor-icons/react";
 import { calculateEquity, EquityResult } from 'poker-odds';
-import Button from "./components/Button";
+import Button from "../../components/Button";
 import Link from "next/link";
-import FramedLink from "./components/FramedLink";
-import PlayerModal from "./components/PlayerModal";
+import FramedLink from "../../components/FramedLink";
+import PlayerModal from "../../components/PlayerModal";
 
 // ID for app: LLM Poker
 const APP_ID = process.env.NEXT_PUBLIC_INSTANT_APP_ID || "";
@@ -23,17 +23,14 @@ type hand = {
   cards: string[];
 }
 
-export default function Home() {
+export default function GamePage({ params }: { params: { id: string } }) {
+  const gameId = params.id;
+  
   const {data, isLoading, error} = db.useQuery({
     games: {
       $: {
         where: {
-          mainEvent: true,
-          customGame: false
-        },
-        limit: 1,
-        order: {
-          createdAt: "desc"
+          id: gameId
         }
       },
       players: {
@@ -55,9 +52,11 @@ export default function Home() {
   });
 
   const [equity, setEquity] = useState<EquityResult[]>([]);
+  const [isAutoRefreshing, setIsAutoRefreshing] = useState(true);
 
   useEffect(() => {
-    if (data?.games[0]) {
+    // check if current betting round is not preflop
+    if (data?.games[0] && data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds[data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.bettingRounds.length - 1]?.type !== "preflop") {
       const game = data.games[0];
       const gameRound = game.gameRounds?.[game.gameRounds.length - 1];
       if (!gameRound) return;
@@ -82,12 +81,55 @@ export default function Home() {
     }
   }, [data]);
 
+  // Auto-refresh to get game updates
+  useEffect(() => {
+    if (!isAutoRefreshing || !data?.games[0]) return;
+    
+    const game = data.games[0];
+    const isGameComplete = game.gameRounds?.length >= game.totalRounds;
+    
+    if (isGameComplete) {
+      setIsAutoRefreshing(false);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      // The query will automatically refetch
+      db.queryOnce({
+        games: {
+          $: {
+            where: {
+              id: gameId
+            }
+          },
+          players: {
+            actions: {
+              gameRound: {},
+              bettingRound: {}
+            },
+            transactions: {},
+          },
+          gameRounds: {
+            bettingRounds: {},
+            hands: {
+              player: {
+                transactions: {}
+              },
+            },
+          }
+        }
+      });
+    }, 3000); // Refresh every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [isAutoRefreshing, data, gameId]);
+
   if(isLoading) {
     return (
       <div className="flex flex-col h-dvh p-10 items-center justify-center">
         <div className="text-neutral-200 font-geist-mono w-max p-4 flex flex-col items-center gap-2">
         <CircleNotch size={16} className="animate-spin" />
-        <p className="text-xs text-neutral-500 font-semibold uppercase">Loading</p>
+        <p className="text-xs text-neutral-500 font-semibold uppercase">Loading Game</p>
         </div>
       </div>
     )
@@ -105,30 +147,19 @@ export default function Home() {
 
   if(!data?.games[0]) {
     return (
-      <div className="flex flex-col p-10 items-center justify-center pt-40 pb-16">
+      <div className="flex flex-col h-dvh p-10 items-center justify-center">
         <div className="text-neutral-200 font-geist-mono w-max p-4 flex flex-col items-center gap-2">
-          <p className="text-sm text-neutral-200 font-semibold uppercase">LLM Poker</p>
-          <p className="text-xs text-neutral-500 font-semibold uppercase">No main event game happening right now</p>
+          <p className="text-xs text-neutral-500 font-semibold uppercase">Game Not Found</p>
+          <FramedLink href="/">
+            <ArrowLeft size={16} />
+            <p>Back to Home</p>
+          </FramedLink>
         </div>
-
-        <div className="flex flex-wrap justify-center items-center gap-2">
-            <FramedLink href="/run">
-              <Play size={16} />
-              <p>Run Custom Simulation</p>
-            </FramedLink>
-            <FramedLink href="https://github.com/dqnamo/llm-poker" target="_blank">
-              <GithubLogoIcon size={16} />
-              <p>Github</p>
-            </FramedLink>
-            <FramedLink href="/history">
-              <ChartScatterIcon size={16} />
-              <p>Historical Data</p>
-            </FramedLink>
-          </div>
-
       </div>
     )
   }
+
+  const game = data.games[0];
 
   return (
     <div className="flex flex-col h-full p-10">
@@ -136,57 +167,47 @@ export default function Home() {
 
         <div className="flex flex-row items-center justify-between col-span-3">
           <div className="flex flex-col gap-1">
-            <h1 className="text-sm font-semibold uppercase">LLM Poker</h1>
-            <p className="text-xs text-neutral-500 max-w-sm">A simple 6 handed poker game to test the reasoning capabilities of LLMs.</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-semibold uppercase">Game #{gameId.slice(-8)}</h1>
+              {game.gameRounds?.length < game.totalRounds && (
+                <div className="flex items-center gap-1 text-xs text-lime-500">
+                  <CircleNotch size={12} className="animate-spin" />
+                  <span>In Progress</span>
+                </div>
+              )}
+              {game.gameRounds?.length >= game.totalRounds && (
+                <div className="text-xs text-neutral-500">
+                  Complete
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-neutral-500 max-w-sm">
+              Round {game.gameRounds?.length || 0} of {game.totalRounds || 0}
+            </p>
           </div>
 
-
           <div className="flex flex-row items-center gap-2">
-            <FramedLink href="/run">
-              <Play size={16} />
-              <p>Run Simulation</p>
-            </FramedLink>
-            <FramedLink href="https://github.com/dqnamo/llm-poker" target="_blank">
-              <GithubLogoIcon size={16} />
-              <p>Github</p>
+            <FramedLink href="/">
+              <ArrowLeft size={16} />
+              <p>Back to Live</p>
             </FramedLink>
             <FramedLink href="/history">
               <ChartScatterIcon size={16} />
-              <p>Historical Data</p>
+              <p>All Games</p>
             </FramedLink>
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="grid grid-cols-3 border-neutral-900 border relative col-span-3 lg:col-span-2">
-            <CornerBorders />
-            <LoadingPlayer />
-            <LoadingPlayer />
-            <LoadingPlayer />
-            <LoadingTable />
-            <LoadingPlayer />
-            <LoadingPlayer />
-            <LoadingPlayer />
-          </div>
-        ) : data?.games[0] ? (
-          <div className="grid grid-cols-3 border-neutral-900 border relative col-span-3 lg:col-span-2">
-            <CornerBorders />
-            <Player player={data?.games[0].players[0]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[0]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 0} button={data?.games[0].buttonPosition === 0} lastAction={data?.games[0].players[0]?.actions?.[data?.games[0].players[0]?.actions?.length - 1]} data={data} equity={equity} />
-            <Player player={data?.games[0].players[1]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[1]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 1} button={data?.games[0].buttonPosition === 1} lastAction={data?.games[0].players[1]?.actions?.[data?.games[0].players[1]?.actions?.length - 1]} data={data} equity={equity}/>
-            <Player player={data?.games[0].players[2]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[2]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 2} button={data?.games[0].buttonPosition === 2} lastAction={data?.games[0].players[2]?.actions?.[data?.games[0].players[2]?.actions?.length - 1]} data={data} equity={equity}/>
-            <Table cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.communityCards.cards} pot={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.pot ?? 0} />
-            <Player player={data?.games[0].players[5]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[5]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 5} button={data?.games[0].buttonPosition === 5} lastAction={data?.games[0].players[5]?.actions?.[data?.games[0].players[5]?.actions?.length - 1]} data={data} equity={equity}/>
-            <Player player={data?.games[0].players[4]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[4]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 4} button={data?.games[0].buttonPosition === 4} lastAction={data?.games[0].players[4]?.actions?.[data?.games[0].players[4]?.actions?.length - 1]} data={data} equity={equity}/>
-            <Player player={data?.games[0].players[3]} cards={data.games[0].gameRounds[data.games[0].gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === data?.games[0].players[3]?.id)[0]?.cards.cards} active={data?.games[0].currentActivePosition === 3} button={data?.games[0].buttonPosition === 3} lastAction={data?.games[0].players[3]?.actions?.[data?.games[0].players[3]?.actions?.length - 1]} data={data} equity={equity}/>
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 border-neutral-900 border relative col-span-3 lg:col-span-2">
-            <CornerBorders />
-            <div className="flex items-center justify-center p-8 text-neutral-500">
-              <p className="text-sm">No game data available</p>
-            </div>
-          </div>
-        )}
+        <div className="grid grid-cols-3 border-neutral-900 border relative col-span-3 lg:col-span-2">
+          <CornerBorders />
+          <Player player={game.players[0]} cards={game.gameRounds[game.gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === game.players[0]?.id)[0]?.cards.cards} active={game.currentActivePosition === 0} button={game.buttonPosition === 0} lastAction={game.players[0]?.actions?.[game.players[0]?.actions?.length - 1]} data={data} equity={equity} />
+          <Player player={game.players[1]} cards={game.gameRounds[game.gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === game.players[1]?.id)[0]?.cards.cards} active={game.currentActivePosition === 1} button={game.buttonPosition === 1} lastAction={game.players[1]?.actions?.[game.players[1]?.actions?.length - 1]} data={data} equity={equity}/>
+          <Player player={game.players[2]} cards={game.gameRounds[game.gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === game.players[2]?.id)[0]?.cards.cards} active={game.currentActivePosition === 2} button={game.buttonPosition === 2} lastAction={game.players[2]?.actions?.[game.players[2]?.actions?.length - 1]} data={data} equity={equity}/>
+          <Table cards={game.gameRounds[game.gameRounds.length - 1]?.communityCards.cards} pot={game.gameRounds[game.gameRounds.length - 1]?.pot ?? 0} />
+          <Player player={game.players[5]} cards={game.gameRounds[game.gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === game.players[5]?.id)[0]?.cards.cards} active={game.currentActivePosition === 5} button={game.buttonPosition === 5} lastAction={game.players[5]?.actions?.[game.players[5]?.actions?.length - 1]} data={data} equity={equity}/>
+          <Player player={game.players[4]} cards={game.gameRounds[game.gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === game.players[4]?.id)[0]?.cards.cards} active={game.currentActivePosition === 4} button={game.buttonPosition === 4} lastAction={game.players[4]?.actions?.[game.players[4]?.actions?.length - 1]} data={data} equity={equity}/>
+          <Player player={game.players[3]} cards={game.gameRounds[game.gameRounds.length - 1]?.hands.filter((hand: hand) => hand.player[0]?.id === game.players[3]?.id)[0]?.cards.cards} active={game.currentActivePosition === 3} button={game.buttonPosition === 3} lastAction={game.players[3]?.actions?.[game.players[3]?.actions?.length - 1]} data={data} equity={equity}/>
+        </div>
 
         <div className="flex flex-col border border-neutral-900 relative col-span-3 lg:col-span-1">
           <CornerBorders />
@@ -195,12 +216,8 @@ export default function Home() {
             <p className="text-xs text-neutral-500">How the models are doing</p>
           </div>
 
-          <Rankings players={data?.games[0].players} />
+          <Rankings players={game.players} />
         </div>
-
-        {/* <div className="flex flex-col border border-neutral-900 relative col-span-3 h-40">
-          <CornerBorders />
-        </div> */}
       </div>
     </div>
   );
@@ -432,21 +449,4 @@ const LoadingPlayer = () => {
       </div>
     </div>
   );
-};
-
-const LoadingTable = () => {
-  return (
-    <div className="border p-20 border-neutral-900 col-span-6">
-      <div className="flex flex-col items-center justify-center gap-4">
-        <div className="h-4 bg-neutral-800 rounded animate-pulse w-16"></div>
-        <div className="grid grid-cols-5 gap-4">
-          <div className="w-10 h-14 bg-neutral-800 rounded animate-pulse"></div>
-          <div className="w-10 h-14 bg-neutral-800 rounded animate-pulse"></div>
-          <div className="w-10 h-14 bg-neutral-800 rounded animate-pulse"></div>
-          <div className="w-10 h-14 bg-neutral-800 rounded animate-pulse"></div>
-          <div className="w-10 h-14 bg-neutral-800 rounded animate-pulse"></div>
-        </div>
-      </div>
-    </div>
-  );
-};
+}; 

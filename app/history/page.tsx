@@ -155,7 +155,7 @@ export default function HistoryPage() {
                             <div className="flex flex-col gap-1">
                               <div className="text-xs font-semibold truncate">{biggestWinner.name}</div>
                               <div className="flex flex-row items-center gap-1">
-                                <div className="text-sm text-teal-500">¤</div>
+                                <div className="text-sm text-lime-500">¤</div>
                                 <div className="text-xs text-neutral-200">
                                   <NumberFlow value={biggestWinner.totalWinnings} />
                                 </div>
@@ -172,7 +172,7 @@ export default function HistoryPage() {
                             <div className="flex flex-col gap-1">
                               <div className="text-xs font-semibold truncate">{biggestLoser.name}</div>
                               <div className="flex flex-row items-center gap-1">
-                                <div className="text-sm text-teal-500">¤</div>
+                                <div className="text-sm text-lime-500">¤</div>
                                 <div className="text-xs text-red-400">
                                   <NumberFlow value={biggestLoser.totalWinnings} />
                                 </div>

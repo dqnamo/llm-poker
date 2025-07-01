@@ -117,7 +117,7 @@ export default function PlayerModal({ player, cards, button, data, children }: P
                           <div className="border-l-2 border-b-2 border-neutral-700 h-3 w-3 absolute -bottom-1 -left-1"/>
                           <div className="border-l-2 border-t-2 border-neutral-700 h-3 w-3 absolute -top-1 -left-1"/>
                           <div className="border-r-2 border-b-2 border-neutral-700 h-3 w-3 absolute -bottom-1 -right-1"/>
-                          <div className="text-2xl text-teal-400">¤</div>
+                          <div className="text-2xl text-lime-400">¤</div>
                           <div className="text-lg font-mono text-neutral-200 font-semibold">
                             <NumberFlow value={player.stack ?? 0} />
                           </div>
@@ -131,25 +131,25 @@ export default function PlayerModal({ player, cards, button, data, children }: P
                       <div className="flex flex-col items-center gap-1">
                         <div className={`flex items-center gap-2 px-3 py-2 border relative ${
                           totalWinnings >= 0 
-                            ? 'bg-teal-500/10 border-teal-500/30' 
+                            ? 'bg-lime-500/10 border-lime-500/30' 
                             : 'bg-red-500/10 border-red-500/30'
                         }`}>
                           <div className={`border-r-2 border-t-2 h-3 w-3 absolute -top-1 -right-1 ${
-                            totalWinnings >= 0 ? 'border-teal-500/50' : 'border-red-500/50'
+                            totalWinnings >= 0 ? 'border-lime-500/50' : 'border-red-500/50'
                           }`}/>
                           <div className={`border-l-2 border-b-2 h-3 w-3 absolute -bottom-1 -left-1 ${
-                            totalWinnings >= 0 ? 'border-teal-500/50' : 'border-red-500/50'
+                            totalWinnings >= 0 ? 'border-lime-500/50' : 'border-red-500/50'
                           }`}/>
                           <div className={`border-l-2 border-t-2 h-3 w-3 absolute -top-1 -left-1 ${
-                            totalWinnings >= 0 ? 'border-teal-500/50' : 'border-red-500/50'
+                            totalWinnings >= 0 ? 'border-lime-500/50' : 'border-red-500/50'
                           }`}/>
                           <div className={`border-r-2 border-b-2 h-3 w-3 absolute -bottom-1 -right-1 ${
-                            totalWinnings >= 0 ? 'border-teal-500/50' : 'border-red-500/50'
+                            totalWinnings >= 0 ? 'border-lime-500/50' : 'border-red-500/50'
                           }`}/>
                           {totalWinnings >= 0 ? (
                             <>
-                              <CaretUp size={18} className="text-teal-400" />
-                              <div className="text-lg font-mono text-teal-300 font-semibold">
+                              <CaretUp size={18} className="text-lime-400" />
+                              <div className="text-lg font-mono text-lime-300 font-semibold">
                                 <NumberFlow value={totalWinnings} />
                               </div>
                             </>
@@ -244,7 +244,7 @@ export default function PlayerModal({ player, cards, button, data, children }: P
                                 </span>
                                 {action.amount > 0 && (
                                   <div className="flex items-center gap-1">
-                                    <div className="text-lg text-teal-500">¤</div>
+                                    <div className="text-lg text-lime-500">¤</div>
                                     <div className="text-xs text-neutral-400">
                                       <NumberFlow value={action.amount} />
                                     </div>

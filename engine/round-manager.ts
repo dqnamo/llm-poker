@@ -26,13 +26,15 @@ export async function performRound({
   players,
   deck,
   roundNumber = 1,
-  buttonPosition = 0
+  buttonPosition = 0,
+  apiKey
 }: {
   gameId: string;
   players: Record<string, Player>;
   deck: string[];
   roundNumber?: number;
   buttonPosition?: number;
+  apiKey?: string;
 }) {
   logger.log(`Starting round ${roundNumber}`, { gameId, buttonPosition });
   
@@ -73,7 +75,8 @@ export async function performRound({
     context,
     buttonPosition,
     initialPot,
-    pots
+    pots,
+    apiKey
   );
   
   // Clear active position
@@ -86,7 +89,8 @@ export async function performRound({
     players,
     hands,
     context,
-    deck.slice(-5) // Get the community cards (last 5 cards dealt)
+    deck.slice(-5), // Get the community cards (last 5 cards dealt)
+    apiKey
   );
   
   return { roundId, hands, context };
@@ -334,11 +338,15 @@ async function playAllBettingRounds(
   context: string[],
   buttonPosition: number,
   initialPot: number,
-  pots: Pot[]
+  pots: Pot[],
+  apiKey?: string
 ): Promise<Pot[]> {
   
   const preFlopStart = getPlayerPosition(buttonPosition, 3, GAME_CONFIG.PLAYER_COUNT);
   const postFlopStart = getPlayerPosition(buttonPosition, 1, GAME_CONFIG.PLAYER_COUNT);
+  
+  // Track cumulative pot across all betting rounds
+  let cumulativePot = 0;
   
   // Preflop betting
   const preflopResult = await playBettingRound(
@@ -352,8 +360,12 @@ async function playAllBettingRounds(
     initialPot,
     preFlopStart,
     pots,
-    buttonPosition
+    buttonPosition,
+    apiKey,
+    cumulativePot
   );
+  
+  cumulativePot += preflopResult.pot;
   
   if (!preflopResult || countActivePlayers(hands) <= 1) {
     await handlePotDistribution(gameId, roundId, players, hands, [], pots);
@@ -376,8 +388,12 @@ async function playAllBettingRounds(
     0,
     postFlopStart,
     preflopResult.pots || pots,
-    buttonPosition
+    buttonPosition,
+    apiKey,
+    cumulativePot
   );
+  
+  cumulativePot += flopResult.pot;
   
   if (!flopResult || countActivePlayers(hands) <= 1) {
     await handlePotDistribution(gameId, roundId, players, hands, flopCards, flopResult?.pots || pots);
@@ -401,8 +417,12 @@ async function playAllBettingRounds(
     0,
     postFlopStart,
     flopResult.pots || pots,
-    buttonPosition
+    buttonPosition,
+    apiKey,
+    cumulativePot
   );
+  
+  cumulativePot += turnResult.pot;
   
   if (!turnResult || countActivePlayers(hands) <= 1) {
     await handlePotDistribution(gameId, roundId, players, hands, turnCards, turnResult?.pots || pots);
@@ -426,8 +446,12 @@ async function playAllBettingRounds(
     0,
     postFlopStart,
     turnResult.pots || pots,
-    buttonPosition
+    buttonPosition,
+    apiKey,
+    cumulativePot
   );
+  
+  cumulativePot += riverResult.pot;
   
   // Final showdown
   await handlePotDistribution(gameId, roundId, players, hands, riverCards, riverResult?.pots || pots);
@@ -449,7 +473,9 @@ async function playBettingRound(
   initialPot: number,
   startingPlayer: number,
   pots: Pot[],
-  buttonPosition: number
+  buttonPosition: number,
+  apiKey?: string,
+  cumulativePot: number = 0
 ) {
   const bettingRoundId = await createBettingRound(
     gameId,
@@ -469,13 +495,15 @@ async function playBettingRound(
     players,
     startingPlayer,
     pots,
-    buttonPosition
+    buttonPosition,
+    apiKey
   });
   
-  // Update round pot
+  // Update round pot with cumulative total
+  const totalPot = cumulativePot + result.pot;
   await db.transact(
     db.tx.gameRounds[roundId].update({
-      pot: result.pot
+      pot: totalPot
     })
   );
   
@@ -539,7 +567,8 @@ async function synthesizePlayerObservations(
   players: Record<string, Player>,
   hands: Record<string, Hand>,
   context: string[],
-  communityCards: string[]
+  communityCards: string[],
+  apiKey?: string
 ): Promise<void> {
   logger.log("Synthesizing player observations", { roundId });
   
@@ -609,7 +638,8 @@ async function synthesizePlayerObservations(
         communityCards,
         finalPot,
         winners,
-        playerActions
+        playerActions,
+        apiKey
       });
       
       // Update player notes in database

@@ -213,7 +213,7 @@ export default function AnalysisPage() {
                     labelStyle={{ color: '#a3a3a3', fontSize: '11px' }}
                     formatter={(value: any, name: string) => [
                       <span className="flex items-center gap-1 text-neutral-200">
-                        <span className="text-teal-500">¤</span>
+                        <span className="text-lime-500">¤</span>
                         <NumberFlow value={value} />
                       </span>,
                       name
@@ -304,7 +304,7 @@ export default function AnalysisPage() {
                       <span className="text-xs font-semibold">{player.name}</span>
                     </div>
                     <div className="flex flex-row items-center gap-1">
-                      <div className="text-sm text-teal-500">¤</div>
+                      <div className="text-sm text-lime-500">¤</div>
                       <div className={`text-xs ${player.totalWinnings >= 0 ? 'text-neutral-200' : 'text-red-400'}`}>
                         <NumberFlow value={player.totalWinnings} />
                       </div>
@@ -332,7 +332,7 @@ export default function AnalysisPage() {
                     <div className="flex flex-row items-center justify-between">
                       <span className="text-xs text-neutral-500 font-medium uppercase">Total Credits</span>
                       <div className="flex flex-row items-center gap-1">
-                        <div className="text-sm text-teal-500">¤</div>
+                        <div className="text-sm text-lime-500">¤</div>
                         <div className="text-xs text-neutral-200">
                           <NumberFlow value={totalCredits} />
                         </div>
@@ -341,7 +341,7 @@ export default function AnalysisPage() {
                     <div className="flex flex-row items-center justify-between">
                       <span className="text-xs text-neutral-500 font-medium uppercase">Total Debits</span>
                       <div className="flex flex-row items-center gap-1">
-                        <div className="text-sm text-teal-500">¤</div>
+                        <div className="text-sm text-lime-500">¤</div>
                         <div className="text-xs text-red-400">
                           <NumberFlow value={totalDebits} />
                         </div>

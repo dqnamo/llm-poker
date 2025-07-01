@@ -52,3 +52,22 @@ export function createDeck(): string[] {
   
   return deck;
 } 
+
+export const OPENROUTER_MODELS = [
+  { id: "google/gemini-2.0-flash-001", name: "Gemini 2.0 Flash" },
+  { id: "anthropic/claude-sonnet-4", name: "Claude Sonnet 4" },
+  { id: "deepseek/deepseek-chat-v3-0324", name: "DeepSeek Chat" },
+  { id: "google/gemini-2.5-flash", name: "Gemini 2.5 Flash" },
+  { id: "google/gemini-2.5-pro", name: "Gemini 2.5 Pro" },
+  { id: "anthropic/claude-3.7-sonnet", name: "Claude 3.7 Sonnet" },
+  { id: "openai/gpt-4o-mini", name: "GPT-4o Mini" },
+  { id: "mistralai/mistral-nemo", name: "Mistral Nemo" },
+  { id: "openai/gpt-4.1", name: "GPT-4.1" },
+  { id: "meta-llama/llama-3.3-70b-instruct", name: "Llama 3.3 70B" },
+  { id: "openai/gpt-4.1-mini", name: "GPT-4.1 Mini" },
+  { id: "x-ai/grok-3-beta", name: "Grok 3 Beta" },
+  { id: "meta-llama/llama-4-maverick", name: "Llama 4 Maverick" },
+  { id: "anthropic/claude-opus-4", name: "Claude Opus 4" },
+  { id: "x-ai/grok-3-mini-beta", name: "Grok 3 Mini Beta" },
+  { id: "qwen/qwen-2.5-72b-instruct", name: "Qwen 2.5 72B" },
+];

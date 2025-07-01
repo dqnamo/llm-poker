@@ -6,13 +6,9 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { ActionResult } from './types';
 import { GAME_CONFIG } from './constants';
 
-const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY || "",
-});
-
 /**
  * Generate an AI player's action based on the current game state
- * @param params - Parameters including player info, cards, bet, context, pot, stack, and model
+ * @param params - Parameters including player info, cards, bet, context, pot, stack, model, and API key
  * @returns The AI's chosen action with reasoning
  */
 export async function generateAction({
@@ -24,7 +20,8 @@ export async function generateAction({
   playerStack,
   model,
   position,
-  notes
+  notes,
+  apiKey
 }: {
   playerId: string;
   cards: string[];
@@ -35,6 +32,7 @@ export async function generateAction({
   model: string;
   position: string;
   notes?: string;
+  apiKey?: string;
 }): Promise<ActionResult[]> {
   
   // Define available tools based on the current bet
@@ -77,6 +75,11 @@ export async function generateAction({
   };
 
   try {
+    // Create OpenRouter client with provided API key or fallback to environment
+    const openrouter = createOpenRouter({
+      apiKey: apiKey || process.env.OPENROUTER_API_KEY || "",
+    });
+
     const { toolCalls } = await generateText({
       model: openrouter.chat(model),
       prompt: buildPokerPrompt({
@@ -279,7 +282,8 @@ export async function synthesizeRoundObservations({
   communityCards,
   finalPot,
   winners,
-  playerActions
+  playerActions,
+  apiKey
 }: {
   playerId: string;
   model: string;
@@ -290,6 +294,7 @@ export async function synthesizeRoundObservations({
   finalPot: number;
   winners: { playerId: string; amount: number }[];
   playerActions: { playerId: string; action: string; reasoning: string }[];
+  apiKey?: string;
 }): Promise<string> {
   const prompt = `
 You are a poker player who just finished a round of Texas Hold'em.
@@ -322,6 +327,11 @@ Keep your notes concise and actionable. Update your existing notes with new insi
 Respond with ONLY the updated notes text (no explanations or meta-commentary).`;
 
   try {
+    // Create OpenRouter client with provided API key or fallback to environment
+    const openrouter = createOpenRouter({
+      apiKey: apiKey || process.env.OPENROUTER_API_KEY || "",
+    });
+
     const { text } = await generateText({
       model: openrouter.chat('google/gemini-2.5-flash'),
       prompt,

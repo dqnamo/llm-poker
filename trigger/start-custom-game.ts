@@ -1,14 +1,16 @@
 /**
- * Main poker game orchestration
+ * Custom poker game orchestration with user-selected models
  * 
- * This file coordinates the overall game flow, managing multiple rounds
- * of poker between AI players using different language models.
+ * This file coordinates the overall game flow for custom simulations,
+ * managing multiple rounds of poker between AI players using models
+ * selected by the user and their OpenRouter API key.
  */
 
 import { logger, task, wait } from "@trigger.dev/sdk/v3";
 import { GAME_CONFIG, createDeck } from '../engine/constants';
+import { Player } from '../engine/types';
 import { 
-  initializeGame, 
+  initializeCustomGame, 
   resetBustedPlayers, 
   updateGameState 
 } from '../engine/game-setup';
@@ -16,37 +18,45 @@ import { performRound } from '../engine/round-manager';
 import { shuffle } from '../engine/utils';
 
 /**
- * Main game task that runs a complete poker game
- * Manages multiple rounds between AI players
+ * Custom game task that runs a poker game with user-selected models
+ * Manages multiple rounds between AI players using custom models
  */
-export const startGame = task({
-  id: "start-game",
+export const startCustomGame = task({
+  id: "start-custom-game",
   retry: {
     maxAttempts: 1,
   },
   maxDuration: GAME_CONFIG.MAX_DURATION,
   run: async (payload: { 
-    handsPerGame?: number; 
-    initialStack?: number; 
-  } = {}, { ctx }) => {
-    // Use provided values or fall back to defaults
-    const handsPerGame = payload.handsPerGame ?? GAME_CONFIG.HANDS_PER_GAME;
-    const initialStack = payload.initialStack ?? GAME_CONFIG.INITIAL_STACK;
+    gameId?: string;
+    models: string[];
+    startingStack: number;
+    numberOfHands: number;
+    openRouterKey: string;
+  }, { ctx }) => {
+    const { gameId: providedGameId, models, startingStack, numberOfHands, openRouterKey } = payload;
 
     // Get the trigger handle ID from the context
     const triggerHandleId = ctx.run.id;
 
-    logger.log("Starting new poker game", { 
-      handsPerGame,
-      initialStack,
+    logger.log("Starting custom poker game", { 
+      models,
+      startingStack,
+      numberOfHands,
       triggerHandleId
     });
     
-    // Initialize game and players with custom values, passing the handle ID
-    const { gameId, players } = await initializeGame(handsPerGame, initialStack, triggerHandleId);
+    // Initialize game and players with custom models, passing the handle ID
+    const { gameId, players } = await initializeCustomGame(
+      models,
+      startingStack,
+      numberOfHands,
+      providedGameId,
+      triggerHandleId // Pass the handle ID to be saved in the game record
+    );
     
     // Play multiple rounds
-    for (let roundIndex = 0; roundIndex < handsPerGame; roundIndex++) {
+    for (let roundIndex = 0; roundIndex < numberOfHands; roundIndex++) {
       // Calculate positions for this round
       const buttonPosition = roundIndex % GAME_CONFIG.PLAYER_COUNT;
       
@@ -63,16 +73,17 @@ export const startGame = task({
       await updateGameState(gameId, buttonPosition, deck);
       
       // Reset any busted players with custom stack size
-      await resetBustedPlayers(players, initialStack);
+      await resetBustedPlayers(players, startingStack);
       
-      // Play the round
+      // Play the round with custom API key
       try {
         await performRound({
           gameId,
           players,
           deck,
           roundNumber: roundIndex + 1,
-          buttonPosition
+          buttonPosition,
+          apiKey: openRouterKey
         });
         
         logger.log(`Round ${roundIndex + 1} completed successfully`);
@@ -82,14 +93,14 @@ export const startGame = task({
       }
     }
     
-    logger.log("Game completed", { 
+    logger.log("Custom game completed", { 
       gameId, 
-      totalRounds: handsPerGame 
+      totalRounds: numberOfHands 
     });
     
     return {
       gameId,
-      roundsPlayed: handsPerGame,
+      roundsPlayed: numberOfHands,
       finalStacks: Object.entries(players).map(([id, player]) => ({
         playerId: id,
         model: player.model,
@@ -97,7 +108,4 @@ export const startGame = task({
       }))
     };
   },
-});
-
-// Re-export performRound for backward compatibility if needed
-export { performRound } from '../engine/round-manager';
+}); 

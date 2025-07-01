@@ -18,6 +18,9 @@ const _schema = i.schema({
       createdAt: i.date().indexed(),
       currentActivePosition: i.number().optional(),
       completedAt: i.date().optional(),
+      customGame: i.boolean().optional(),
+      mainEvent: i.boolean().optional(),
+      jobHandleId: i.string().optional(),
     }),
     players: i.entity({
       name: i.string(),

@@ -37,7 +37,8 @@ export async function performBettingRound({
   players,
   startingPlayer,
   pots,
-  buttonPosition
+  buttonPosition,
+  apiKey
 }: {
   context: string[];
   highestBet: number;
@@ -50,6 +51,7 @@ export async function performBettingRound({
   startingPlayer: number;
   pots: Pot[];
   buttonPosition: number;
+  apiKey?: string;
 }): Promise<BettingRoundResult> {
   
   logger.log("Starting betting round", { bettingRoundId, highestBet, pot });
@@ -83,7 +85,8 @@ export async function performBettingRound({
       players[currentHand.playerId],
       currentPlayer,
       buttonPosition,
-      handKeys.length
+      handKeys.length,
+      apiKey
     );
     
     // Process the action
@@ -138,7 +141,8 @@ async function getPlayerAction(
   player: Player,
   currentPlayer: number,
   buttonPosition: number,
-  totalPlayers: number
+  totalPlayers: number,
+  apiKey?: string
 ): Promise<any> {
   // Calculate position relative to button
   const positionFromButton = (currentPlayer - buttonPosition + totalPlayers) % totalPlayers;
@@ -195,7 +199,8 @@ async function getPlayerAction(
     playerStack: player.stack,
     model: player.model,
     position,
-    notes
+    notes,
+    apiKey
   });
   
   return toolCalls[0]; // Return first action
