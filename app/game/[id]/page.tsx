@@ -288,8 +288,6 @@ const Player = ({player, cards, active, button, lastAction,data, equity}: {playe
               
               {lastAction?.reasoning && (lastAction as InstaQLEntity<AppSchema, "actions", {bettingRound: object, gameRound: object}>)?.gameRound?.id === data?.games?.[0]?.gameRounds?.[data.games[0].gameRounds.length - 1]?.id ? (
                 <>
-                {(lastAction.type !== 'bet' || 
-                  lastAction.reasoning?.includes('Posted the')) && (
                   <div className="flex flex-row items-center gap-2">
                   <div className="text-xs  text-neutral-200 font-mono uppercase font-medium">
                     {lastAction.reasoning?.includes('Posted the small blind') ? 'SMALL BLIND' :
@@ -308,7 +306,6 @@ const Player = ({player, cards, active, button, lastAction,data, equity}: {playe
                     </div>
                   )}
                   </div>
-                )}
                 </>
               ) : (
                 <div className="flex flex-col gap-2">
