@@ -36,6 +36,14 @@ export const AI_MODELS = [
     name: "Grok 3 Beta",
     model: "x-ai/grok-3-beta",
   },
+  {
+    name: "Llama 4 Scout",
+    model: "meta-llama/llama-4-scout",
+  },
+  {
+    name: "Llama 4 Maverick",
+    model: "meta-llama/llama-4-maverick",
+  },
 ] as const;
 
 // Create a standard 52-card deck
@@ -70,4 +78,6 @@ export const OPENROUTER_MODELS = [
   { id: "anthropic/claude-opus-4", name: "Claude Opus 4" },
   { id: "x-ai/grok-3-mini-beta", name: "Grok 3 Mini Beta" },
   { id: "qwen/qwen-2.5-72b-instruct", name: "Qwen 2.5 72B" },
+  { id: "meta-llama/llama-4-scout", name: "Llama 4 Scout" },
+  { id: "openai/o4-mini", name: "o4 Mini" },
 ];
