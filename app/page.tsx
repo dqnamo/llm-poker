@@ -6,7 +6,7 @@ import { init, InstaQLEntity } from "@instantdb/react";
 import schema, { AppSchema } from "@/instant.schema";
 import NumberFlow from '@number-flow/react'
 import { Reorder } from "motion/react"
-import { CaretDown, CaretUp, ChartScatterIcon, CircleNotch, GithubLogoIcon, Play } from "@phosphor-icons/react";
+import { CaretDown, CaretUp, ChartScatterIcon, CircleNotch, DiscordLogoIcon, GithubLogoIcon, Play } from "@phosphor-icons/react";
 import { calculateEquity, EquityResult } from 'poker-odds';
 import FramedLink from "./components/FramedLink";
 import PlayerModal from "./components/PlayerModal";
@@ -111,12 +111,16 @@ export default function Home() {
 
         <div className="flex flex-wrap justify-center items-center gap-2">
             <FramedLink href="/run">
-              <Play size={16} />
+              <Play size={16} className="text-lime-500" />
               <p>Run Custom Simulation</p>
             </FramedLink>
             <FramedLink href="https://github.com/dqnamo/llm-poker" target="_blank">
               <GithubLogoIcon size={16} />
               <p>Github</p>
+            </FramedLink>
+            <FramedLink href="https://discord.gg/3xx9e48CcT" target="_blank">
+              <DiscordLogoIcon size={16} />
+              <p>Discord</p>
             </FramedLink>
             <FramedLink href="/history">
               <ChartScatterIcon size={16} />
