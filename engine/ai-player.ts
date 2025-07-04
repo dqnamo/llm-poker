@@ -333,7 +333,7 @@ Respond with ONLY the updated notes text (no explanations or meta-commentary).`;
     });
 
     const { text } = await generateText({
-      model: openrouter.chat('google/gemini-2.5-flash'),
+      model: openrouter.chat(model),
       prompt,
       maxTokens: 500,
       temperature: 0.7,

@@ -76,6 +76,9 @@ export async function performBettingRound({
       })
     );
     
+    // pause for 1 second
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     // Get AI decision
     const action = await getPlayerAction(
       currentHand,
