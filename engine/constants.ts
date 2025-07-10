@@ -77,7 +77,10 @@ export const OPENROUTER_MODELS = [
   { id: "meta-llama/llama-4-maverick", name: "Llama 4 Maverick" },
   { id: "anthropic/claude-opus-4", name: "Claude Opus 4" },
   { id: "x-ai/grok-3-mini-beta", name: "Grok 3 Mini Beta" },
+  { id: "x-ai/grok-3", name: "Grok 3" },
   { id: "qwen/qwen-2.5-72b-instruct", name: "Qwen 2.5 72B" },
   { id: "meta-llama/llama-4-scout", name: "Llama 4 Scout" },
   { id: "openai/o4-mini", name: "o4 Mini" },
+  { id: "x-ai/grok-4", name: "Grok 4" },
+  { id: "deepseek/deepseek-r1-0528", name: "DeepSeek R1" },
 ];
