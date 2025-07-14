@@ -83,4 +83,5 @@ export const OPENROUTER_MODELS = [
   { id: "openai/o4-mini", name: "o4 Mini" },
   { id: "x-ai/grok-4", name: "Grok 4" },
   { id: "deepseek/deepseek-r1-0528", name: "DeepSeek R1" },
+  { id: "moonshotai/kimi-k2", name: "Kimi K2" },
 ];
