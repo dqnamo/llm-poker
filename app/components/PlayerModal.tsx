@@ -87,12 +87,12 @@ export default function PlayerModal({ player, cards, button, data, children }: P
             <div
               ref={refs.setFloating}
               {...getFloatingProps()}
-              className="text-neutral-200 font-geist-mono border border-neutral-900 relative max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+              className="text-neutral-200 font-geist-mono  border-neutral-900 relative max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col"
             >
-              <CornerBorders />
+              {/* <CornerBorders /> */}
               
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-neutral-900 flex-shrink-0 bg-neutral-950">
+              <div className="flex items-center justify-between p-4 border-neutral-900 flex-shrink-0 bg-neutral-950">
                 <div className="flex items-center gap-4">
                   <h1 className="text-sm font-semibold uppercase">{player.name}</h1>
                   {button && (
@@ -110,7 +110,7 @@ export default function PlayerModal({ player, cards, button, data, children }: P
               {/* Content */}
               <div className="overflow-y-auto flex-1 bg-neutral-950">
                 {/* Current Status */}
-                <div className="border-b border-neutral-900">
+                <div className=" border-neutral-900">
                   <div className="flex flex-col p-6 border-neutral-900">
                     <h1 className="text-sm font-semibold uppercase tracking-wider text-neutral-100">Current Status</h1>
                     <p className="text-xs text-neutral-500 mt-1">Player information</p>

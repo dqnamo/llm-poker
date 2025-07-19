@@ -34,23 +34,23 @@ const Card = ({ value, className = "", faceDown = false }: CardProps) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.2 }}
-      className={`relative border border-neutral-900 bg-neutral-950 flex items-center justify-center ${className}`}
+      className={`relative bg-white rounded-md flex items-center justify-center shadow-sm ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
 
-      <CornerBorders borderColor={borderColor} />
+      {/* <CornerBorders borderColor={borderColor} /> */}
 
       {(!faceDown || isHovered) ? (
         // Face up card
-        <div className={`flex flex-row gap-1 items-center justify-center w-full h-full ${textColor}`}>
-          <span className="text-xs sm:text-sm font-bold">{rankText}</span>
+        <div className={`flex flex-col gap-1 items-center justify-center w-full h-full ${textColor}`}>
+          <span className="text-xs sm:text-sm font-bold text-neutral-900">{rankText}</span>
           {/* <span className="text-xs sm:text-sm font-bold">{suit}</span> */}
 
           {suit === 'h' && <Heart className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
           {suit === 'd' && <Diamond className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
-          {suit === 'c' && <Club className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
-          {suit === 's' && <Spade className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
+          {suit === 'c' && <Club className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-900'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
+          {suit === 's' && <Spade className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-900'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
         </div>
       ) : (
         // Face down card
