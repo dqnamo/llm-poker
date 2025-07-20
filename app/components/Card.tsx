@@ -44,7 +44,7 @@ const Card = ({ value, className = "", faceDown = false }: CardProps) => {
       {(!faceDown || isHovered) ? (
         // Face up card
         <div className={`flex flex-col gap-1 items-center justify-center w-full h-full ${textColor}`}>
-          <span className="text-xs sm:text-sm font-bold text-neutral-900">{rankText}</span>
+          <span className="text-xs sm:text-sm font-bold font-sans text-neutral-900">{rankText}</span>
           {/* <span className="text-xs sm:text-sm font-bold">{suit}</span> */}
 
           {suit === 'h' && <Heart className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}

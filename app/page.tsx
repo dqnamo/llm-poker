@@ -106,12 +106,13 @@ export default function Home() {
       <div className="flex flex-col p-10 items-center justify-center pt-40 pb-16">
         <div className="text-neutral-200 font-geist-mono w-max p-4 flex flex-col items-center gap-2">
           <p className="text-sm text-neutral-200 font-semibold uppercase">LLM Poker</p>
-          <p className="text-xs text-neutral-500 font-semibold uppercase">No main event game happening right now</p>
+          <p className="text-xs text-neutral-500 font-sans max-w-sm text-center">LLM poker is a fully open source poker simulation platform to test the reasoning capabilities of LLMs. Built by <a href="https://x.com/dqnamo" target="_blank" className="text-neutral-200">JP</a></p>
+          {/* <p className="text-xs text-neutral-500 font-semibold uppercase">No main event game happening right now</p> */}
         </div>
 
         <div className="flex flex-wrap justify-center items-center gap-2">
             <FramedLink href="/run">
-              <Play size={16} className="text-lime-500" />
+              <Play size={16} className="text-cyan-500" />
               <p>Run Custom Simulation</p>
             </FramedLink>
             <FramedLink href="https://github.com/dqnamo/llm-poker" target="_blank">
@@ -139,6 +140,7 @@ export default function Home() {
         <div className="flex flex-row items-center justify-between col-span-3">
           <div className="flex flex-col gap-1">
             <h1 className="text-sm font-semibold uppercase">LLM Poker</h1>
+            <p className="text-xs text-neutral-500">LLM poker is a fully open source poker simulation platform to test the reasoning capabilities of LLMs.</p>
             <p className="text-xs text-neutral-500 max-w-sm">A simple 6 handed poker game to test the reasoning capabilities of LLMs.</p>
           </div>
 

@@ -27,7 +27,7 @@ export default function RootLayout({
       >
         <PostHogProvider>
           {children}
-          <Footer />
+          {/* <Footer /> */}
         </PostHogProvider>
       </body>
     </html>

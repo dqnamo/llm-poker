@@ -4,7 +4,7 @@ import { init, id } from '@instantdb/admin';
 import { DateTime } from "luxon";
 import { logger } from "@trigger.dev/sdk/v3";
 import { Player } from './types';
-import { GAME_CONFIG, AI_MODELS, createDeck } from './constants';
+import { GAME_CONFIG, AI_MODELS, createDeck, OPENROUTER_MODELS } from './constants';
 import { shuffle } from './utils';
 
 // Initialize database
@@ -196,7 +196,7 @@ export async function initializeCustomGame(
     await db.transact(
       db.tx.players[playerId]
         .update({
-          name: `Player ${i + 1} (${modelName})`,
+          name: OPENROUTER_MODELS.find(m => m.id === model)?.name || modelName,
           stack: initialStack,
           status: "active",
           model: model,
