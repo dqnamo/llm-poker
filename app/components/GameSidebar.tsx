@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { InstaQLEntity } from "@instantdb/react";
 import { AppSchema } from "@/instant.schema";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import NumberFlow from '@number-flow/react';
 import { CaretUp, CaretDown, ChartLine, Brain, Trophy, X, DiamondsFourIcon } from "@phosphor-icons/react";
 import { Reorder } from "motion/react";
@@ -162,7 +162,7 @@ export default function GameSidebar({ game, selectedPlayer, onPlayerSelect }: Ga
   );
 }
 
-function AnalyticsTab({ game, chartData }: { game: GameSidebarProps['game'], chartData: any[] }) {
+function AnalyticsTab({ game, chartData }: { game: GameSidebarProps['game'], chartData: Record<string, unknown>[] }) {
   return (
     <div className="p-4 space-y-6">
       {/* Chart */}

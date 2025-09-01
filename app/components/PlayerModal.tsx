@@ -29,16 +29,7 @@ interface PlayerModalProps {
   children: React.ReactNode;
 }
 
-const CornerBorders = () => {
-  return (    
-    <>  
-    <div className="border-r-3 border-t-3 border-neutral-800 h-4 w-4 absolute -top-1 -right-1"/>
-    <div className="border-l-3 border-b-3 border-neutral-800 h-4 w-4 absolute -bottom-1 -left-1"/>
-    <div className="border-l-3 border-t-3 border-neutral-800 h-4 w-4 absolute -top-1 -left-1"/>
-    <div className="border-r-3 border-b-3 border-neutral-800 h-4 w-4 absolute -bottom-1 -right-1"/>
-    </>
-  );
-};
+
 
 export default function PlayerModal({ player, cards, button, data, children }: PlayerModalProps) {
   const [isOpen, setIsOpen] = useState(false);

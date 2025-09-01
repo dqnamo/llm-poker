@@ -26,7 +26,6 @@ const Card = ({ value, className = "", faceDown = false }: CardProps) => {
 
   const isRed = suit === 'h' || suit === 'd';
   const textColor = isRed ? 'text-neutral-200' : 'text-neutral-200';
-  const borderColor = isRed ? 'border-red-500' : 'border-neutral-300';
   
   return (
     <motion.div 
@@ -62,15 +61,6 @@ const Card = ({ value, className = "", faceDown = false }: CardProps) => {
   );
 };
 
-const CornerBorders = ({ borderColor }: { borderColor: string }) => {
-  return (
-    <>
-      <div className={`border-r-1 border-t-1 ${borderColor} h-1 w-1 absolute -top-px -right-px`}/>
-      <div className={`border-l-1 border-b-1 ${borderColor} h-1 w-1 absolute -bottom-px -left-px`}/>
-      <div className={`border-l-1 border-t-1 ${borderColor} h-1 w-1 absolute -top-px -left-px`}/>
-      <div className={`border-r-1 border-b-1 ${borderColor} h-1 w-1 absolute -bottom-px -right-px`}/>
-    </>
-  );
-};
+
 
 export default Card; 

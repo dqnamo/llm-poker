@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Geist_Mono } from "next/font/google";
-import Footer from "./components/Footer";
+
 import { PostHogProvider } from "./components/PostHogProvider";
 
 const geistMono = Geist_Mono({
