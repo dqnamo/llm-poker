@@ -430,14 +430,6 @@ const Table = ({cards, pot}: {cards: string[], pot: number}) => {
 
 
 
-
-
-type PlayerWithRelations = InstaQLEntity<AppSchema, "players"> & {
-  transactions: InstaQLEntity<AppSchema, "transactions">[];
-}
-
-
-
 const LoadingPlayer = () => {
   return (
     <div className="bg-neutral-900 p-px overflow-hidden relative h-full flex flex-col">
