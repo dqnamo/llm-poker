@@ -1,7 +1,5 @@
 "use client";
 
-import { init } from "@instantdb/react";
-import schema from "@/instant.schema";
 
 import { ChartScatterIcon, CircleNotch, GithubLogoIcon, Play, DiamondsFourIcon, MagnifyingGlass, X } from "@phosphor-icons/react";
 import FramedLink from "./components/FramedLink";
@@ -10,8 +8,6 @@ import { useEffect, useState } from "react";
 import Footer from "./components/Footer";
 import { useRouter } from "next/navigation";
 
-// ID for app: LLM Poker
-const APP_ID = process.env.NEXT_PUBLIC_INSTANT_APP_ID || "";
 
 
 

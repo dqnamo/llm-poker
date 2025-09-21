@@ -6,7 +6,7 @@ import { init, InstaQLEntity } from "@instantdb/react";
 import schema, { AppSchema } from "@/instant.schema";
 import NumberFlow from '@number-flow/react'
 
-import { CaretDown, CaretUp, CircleNotch, ArrowLeft, DiamondsFourIcon } from "@phosphor-icons/react";
+import { CircleNotch, ArrowLeft, DiamondsFourIcon } from "@phosphor-icons/react";
 import { calculateEquity, EquityResult } from 'poker-odds';
 import FramedLink from "../../components/FramedLink";
 
@@ -435,8 +435,6 @@ const Table = ({cards, pot}: {cards: string[], pot: number}) => {
 type PlayerWithRelations = InstaQLEntity<AppSchema, "players"> & {
   transactions: InstaQLEntity<AppSchema, "transactions">[];
 }
-
-type PlayerWithWinnings = PlayerWithRelations & { totalWinnings: number };
 
 
 
