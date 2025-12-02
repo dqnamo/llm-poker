@@ -1,6 +1,9 @@
 @import "tailwindcss";
 
 @theme {
+  /* Custom breakpoint for ultra-wide screens */
+  --breakpoint-3xl: 1920px;
+
   --font-geist-mono: var(--font-geist-mono);
   --font-geist: var(--font-geist);
   --font-sans: var(--font-geist);

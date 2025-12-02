@@ -13,8 +13,19 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { useMemo } from "react";
-import { CircleNotch } from "@phosphor-icons/react";
+import {
+  CircleNotch,
+  ChartScatterIcon,
+  GithubLogoIcon,
+  DiamondsFourIcon,
+  CaretUp,
+  CaretDown,
+  ArrowLeft,
+} from "@phosphor-icons/react";
 import NumberFlow from "@number-flow/react";
+import AnimatedFramedLink from "../../components/AnimatedFramedLink";
+import { CornerBorders } from "../../components/GameSidebar";
+import Footer from "../../components/Footer";
 
 // ID for app: LLM Poker
 const APP_ID = process.env.NEXT_PUBLIC_INSTANT_APP_ID || "";
@@ -32,17 +43,6 @@ const PLAYER_COLORS = [
   "#FF8042",
   "#0088FE",
 ];
-
-const CornerBorders = () => {
-  return (
-    <>
-      <div className="border-r-3 border-t-3 border-neutral-800 h-4 w-4 absolute -top-1 -right-1" />
-      <div className="border-l-3 border-b-3 border-neutral-800 h-4 w-4 absolute -bottom-1 -left-1" />
-      <div className="border-l-3 border-t-3 border-neutral-800 h-4 w-4 absolute -top-1 -left-1" />
-      <div className="border-r-3 border-b-3 border-neutral-800 h-4 w-4 absolute -bottom-1 -right-1" />
-    </>
-  );
-};
 
 export default function AnalysisPage() {
   const { gameId } = useParams();
@@ -155,10 +155,10 @@ export default function AnalysisPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-dvh p-10 items-center justify-center">
-        <div className="text-neutral-200  w-max p-4 flex flex-col items-center gap-2">
+      <div className="flex flex-col h-dvh p-10 items-center justify-center bg-dark-1">
+        <div className="text-text-medium w-max p-4 flex flex-col items-center gap-2">
           <CircleNotch size={16} className="animate-spin" />
-          <p className="text-xs text-neutral-500 font-semibold uppercase">
+          <p className="text-xs text-text-dim font-semibold uppercase">
             Loading Game Analysis
           </p>
         </div>
@@ -168,12 +168,12 @@ export default function AnalysisPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col h-dvh p-10 items-center justify-center">
-        <div className="text-neutral-200  w-max p-4 flex flex-col items-center gap-2">
-          <p className="text-xs text-neutral-500 font-semibold uppercase">
+      <div className="flex flex-col h-dvh p-10 items-center justify-center bg-dark-1">
+        <div className="text-text-medium w-max p-4 flex flex-col items-center gap-2">
+          <p className="text-xs text-text-dim font-semibold uppercase">
             Error Loading Game
           </p>
-          <p className="text-xs text-neutral-400">{error.message}</p>
+          <p className="text-xs text-text-dim">{error.message}</p>
         </div>
       </div>
     );
@@ -182,75 +182,103 @@ export default function AnalysisPage() {
   const game = data?.games?.[0];
   if (!game) {
     return (
-      <div className="flex flex-col h-dvh p-10 items-center justify-center">
-        <div className="text-neutral-200  w-max p-4 flex flex-col items-center gap-2">
-          <p className="text-xs text-neutral-500 font-semibold uppercase">
+      <div className="flex flex-col h-dvh p-10 items-center justify-center bg-dark-1">
+        <div className="text-text-medium w-max p-4 flex flex-col items-center gap-2">
+          <p className="text-xs text-text-dim font-semibold uppercase">
             Game Not Found
           </p>
+          <AnimatedFramedLink href="/history">
+            <ArrowLeft size={16} />
+            <p>Back to History</p>
+          </AnimatedFramedLink>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full p-10">
-      <div className="text-neutral-200  max-w-7xl mx-auto w-full">
+    <div className="min-h-dvh bg-dark-1 flex flex-col p-4 sm:p-6 lg:p-8 2xl:p-12">
+      <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto w-full flex-1">
         {/* Header */}
-        <div className="flex flex-row items-center justify-between mb-8">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-sm font-semibold uppercase">Game Analysis</h1>
-            <div className="text-xs text-neutral-500 max-w-sm">
-              Transaction history and player performance over time.
+        <div className="flex flex-row items-center justify-between mb-4 2xl:mb-6">
+          <div className="flex flex-col gap-1 2xl:gap-2">
+            <div className="flex items-center gap-2 2xl:gap-3">
+              <h1 className="text-sm 2xl:text-base font-semibold text-text-bright uppercase">
+                Game Analysis
+              </h1>
+              <span className="text-text-dim font-semibold text-xs 2xl:text-sm">
+                #{(gameId as string).slice(-8)}
+              </span>
             </div>
+            <p className="text-xs 2xl:text-sm text-text-dim">
+              Transaction history and player performance over time
+            </p>
+          </div>
+          <div className="flex flex-row items-center gap-2 2xl:gap-3">
+            <AnimatedFramedLink href="/history">
+              <ChartScatterIcon size={16} className="2xl:w-5 2xl:h-5" />
+              <p>History</p>
+            </AnimatedFramedLink>
+            <AnimatedFramedLink
+              href="https://github.com/dqnamo/llm-poker"
+              target="_blank"
+            >
+              <GithubLogoIcon size={16} className="2xl:w-5 2xl:h-5" />
+              <p>Github</p>
+            </AnimatedFramedLink>
           </div>
         </div>
 
         {/* Main Chart */}
-        <div className="flex flex-col border border-neutral-900 relative mb-8">
-          <CornerBorders />
-          <div className="flex flex-col p-4 border-b border-neutral-900">
-            <h2 className="text-xs font-medium uppercase">
+        <div className="border border-dark-5 relative mb-6 2xl:mb-8">
+          <CornerBorders colorClass="border-dark-8" />
+          <div className="bg-dark-3 border-b border-dark-5 p-3 2xl:p-4">
+            <h2 className="text-xs 2xl:text-sm font-medium uppercase text-text-bright">
               Player Balances Over Time
             </h2>
-            <p className="text-xs text-neutral-500">
-              How each player&#39;s position changed throughout the game
+            <p className="text-xs 2xl:text-sm text-text-dim">
+              How each player&apos;s position changed throughout the game
             </p>
           </div>
 
-          <div className="bg-neutral-950 p-6">
+          <div className="bg-dark-2 p-4 2xl:p-6">
             {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={400}>
+              <ResponsiveContainer
+                width="100%"
+                height={400}
+                className="2xl:!h-[500px]"
+              >
                 <LineChart
                   data={chartData}
                   margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#262626" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--dark-5)" />
                   <XAxis
                     dataKey="timestamp"
-                    stroke="#737373"
+                    stroke="var(--dark-8)"
                     tick={false}
                     axisLine={false}
                   />
                   <YAxis
-                    stroke="#737373"
+                    stroke="var(--dark-8)"
                     fontSize={10}
-                    tick={{ fill: "#737373" }}
+                    tick={{ fill: "var(--text-dim)" }}
                     tickFormatter={(value) => `¤${value}`}
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#0a0a0a",
-                      border: "1px solid #262626",
-                      borderRadius: "4px",
+                      backgroundColor: "var(--dark-2)",
+                      border: "1px solid var(--dark-5)",
+                      borderRadius: "0px",
                       fontSize: "12px",
                     }}
-                    labelStyle={{ color: "#a3a3a3", fontSize: "11px" }}
+                    labelStyle={{ color: "var(--text-dim)", fontSize: "11px" }}
                     formatter={(value: number, name: string) => [
                       <span
                         key={`${name}-${value}`}
-                        className="flex items-center gap-1 text-neutral-200"
+                        className="flex items-center gap-1 text-text-medium"
                       >
-                        <span className="text-lime-500">¤</span>
+                        <span className="text-green-500">¤</span>
                         <NumberFlow value={value} />
                       </span>,
                       name,
@@ -261,7 +289,11 @@ export default function AnalysisPage() {
                     }}
                   />
                   <Legend
-                    wrapperStyle={{ paddingTop: "20px", fontSize: "12px" }}
+                    wrapperStyle={{
+                      paddingTop: "20px",
+                      fontSize: "12px",
+                      color: "var(--text-dim)",
+                    }}
                     iconType="line"
                   />
 
@@ -279,8 +311,8 @@ export default function AnalysisPage() {
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center justify-center h-40">
-                <p className="text-xs text-neutral-500 font-semibold uppercase">
+              <div className="flex items-center justify-center h-40 2xl:h-52">
+                <p className="text-xs 2xl:text-sm text-text-dim font-semibold uppercase">
                   No Transaction Data Available
                 </p>
               </div>
@@ -289,36 +321,40 @@ export default function AnalysisPage() {
         </div>
 
         {/* Game Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 2xl:gap-6">
           {/* Game Details */}
-          <div className="flex flex-col border border-neutral-900 relative">
-            <CornerBorders />
-            <div className="flex flex-col p-4 border-b border-neutral-900">
-              <h3 className="text-xs font-medium uppercase">Game Details</h3>
-              <p className="text-xs text-neutral-500">Basic game information</p>
+          <div className="border border-dark-5 relative">
+            <CornerBorders colorClass="border-dark-8" />
+            <div className="bg-dark-3 border-b border-dark-5 p-3 2xl:p-4">
+              <h3 className="text-xs 2xl:text-sm font-medium uppercase text-text-bright">
+                Game Details
+              </h3>
+              <p className="text-xs 2xl:text-sm text-text-dim">
+                Basic game information
+              </p>
             </div>
-            <div className="bg-neutral-950 p-4 space-y-3">
+            <div className="bg-dark-2 p-4 2xl:p-5 space-y-3 2xl:space-y-4">
               <div className="flex flex-row items-center justify-between">
-                <span className="text-xs text-neutral-500 font-medium uppercase">
+                <span className="text-xs 2xl:text-sm text-text-dim font-medium uppercase">
                   Total Rounds
                 </span>
-                <span className="text-xs text-neutral-200">
+                <span className="text-xs 2xl:text-sm text-text-medium">
                   <NumberFlow value={game.gameRounds?.length || 0} />
                 </span>
               </div>
               <div className="flex flex-row items-center justify-between">
-                <span className="text-xs text-neutral-500 font-medium uppercase">
+                <span className="text-xs 2xl:text-sm text-text-dim font-medium uppercase">
                   Players
                 </span>
-                <span className="text-xs text-neutral-200">
+                <span className="text-xs 2xl:text-sm text-text-medium">
                   <NumberFlow value={game.players?.length || 0} />
                 </span>
               </div>
               <div className="flex flex-row items-center justify-between">
-                <span className="text-xs text-neutral-500 font-medium uppercase">
+                <span className="text-xs 2xl:text-sm text-text-dim font-medium uppercase">
                   Created
                 </span>
-                <span className="text-xs text-neutral-200">
+                <span className="text-xs 2xl:text-sm text-text-medium">
                   {new Date(game.createdAt).toLocaleDateString()}
                 </span>
               </div>
@@ -326,17 +362,17 @@ export default function AnalysisPage() {
           </div>
 
           {/* Current Rankings */}
-          <div className="flex flex-col border border-neutral-900 relative">
-            <CornerBorders />
-            <div className="flex flex-col p-4 border-b border-neutral-900">
-              <h3 className="text-xs font-medium uppercase">
+          <div className="border border-dark-5 relative">
+            <CornerBorders colorClass="border-dark-8" />
+            <div className="bg-dark-3 border-b border-dark-5 p-3 2xl:p-4">
+              <h3 className="text-xs 2xl:text-sm font-medium uppercase text-text-bright">
                 Current Standings
               </h3>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs 2xl:text-sm text-text-dim">
                 Player rankings by total winnings
               </p>
             </div>
-            <div className="bg-neutral-950 divide-y divide-neutral-900">
+            <div className="bg-dark-2 divide-y divide-dark-5">
               {game.players
                 ?.map((player) => {
                   const totalWinnings =
@@ -349,22 +385,41 @@ export default function AnalysisPage() {
                 .map((player, index) => (
                   <div
                     key={player.id}
-                    className="flex flex-row items-center justify-between p-4"
+                    className="flex flex-row items-center justify-between p-3 2xl:p-4"
                   >
-                    <div className="flex flex-row items-center gap-2">
-                      <span className="text-xs text-neutral-500  w-4">
+                    <div className="flex flex-row items-center gap-2 2xl:gap-3">
+                      <span className="text-xs 2xl:text-sm text-text-dim w-4">
                         #{index + 1}
                       </span>
-                      <span className="text-xs font-semibold">
+                      <span className="text-xs 2xl:text-sm font-semibold text-text-medium">
                         {player.name}
                       </span>
                     </div>
-                    <div className="flex flex-row items-center gap-1">
-                      <div className="text-sm text-lime-500">¤</div>
-                      <div
-                        className={`text-xs ${
+                    <div className="flex flex-row items-center gap-1 2xl:gap-1.5">
+                      {player.totalWinnings >= 0 ? (
+                        <CaretUp
+                          size={12}
+                          className="text-green-500 2xl:w-4 2xl:h-4"
+                        />
+                      ) : (
+                        <CaretDown
+                          size={12}
+                          className="text-red-500 2xl:w-4 2xl:h-4"
+                        />
+                      )}
+                      <DiamondsFourIcon
+                        size={10}
+                        className={`2xl:w-3 2xl:h-3 ${
                           player.totalWinnings >= 0
-                            ? "text-neutral-200"
+                            ? "text-green-500"
+                            : "text-red-500"
+                        }`}
+                        weight="fill"
+                      />
+                      <div
+                        className={`text-xs 2xl:text-sm ${
+                          player.totalWinnings >= 0
+                            ? "text-green-400"
                             : "text-red-400"
                         }`}
                       >
@@ -377,15 +432,17 @@ export default function AnalysisPage() {
           </div>
 
           {/* Transaction Summary */}
-          <div className="flex flex-col border border-neutral-900 relative">
-            <CornerBorders />
-            <div className="flex flex-col p-4 border-b border-neutral-900">
-              <h3 className="text-xs font-medium uppercase">
+          <div className="border border-dark-5 relative">
+            <CornerBorders colorClass="border-dark-8" />
+            <div className="bg-dark-3 border-b border-dark-5 p-3 2xl:p-4">
+              <h3 className="text-xs 2xl:text-sm font-medium uppercase text-text-bright">
                 Transaction Summary
               </h3>
-              <p className="text-xs text-neutral-500">Total money movement</p>
+              <p className="text-xs 2xl:text-sm text-text-dim">
+                Total money movement
+              </p>
             </div>
-            <div className="bg-neutral-950 p-4 space-y-3">
+            <div className="bg-dark-2 p-4 2xl:p-5 space-y-3 2xl:space-y-4">
               {(() => {
                 const allTransactions =
                   game.players?.flatMap((p) => p.transactions || []) || [];
@@ -399,32 +456,40 @@ export default function AnalysisPage() {
                 return (
                   <>
                     <div className="flex flex-row items-center justify-between">
-                      <span className="text-xs text-neutral-500 font-medium uppercase">
+                      <span className="text-xs 2xl:text-sm text-text-dim font-medium uppercase">
                         Total Credits
                       </span>
-                      <div className="flex flex-row items-center gap-1">
-                        <div className="text-sm text-lime-500">¤</div>
-                        <div className="text-xs text-neutral-200">
+                      <div className="flex flex-row items-center gap-1 2xl:gap-1.5">
+                        <DiamondsFourIcon
+                          size={10}
+                          className="text-green-500 2xl:w-3 2xl:h-3"
+                          weight="fill"
+                        />
+                        <div className="text-xs 2xl:text-sm text-green-400">
                           <NumberFlow value={totalCredits} />
                         </div>
                       </div>
                     </div>
                     <div className="flex flex-row items-center justify-between">
-                      <span className="text-xs text-neutral-500 font-medium uppercase">
+                      <span className="text-xs 2xl:text-sm text-text-dim font-medium uppercase">
                         Total Debits
                       </span>
-                      <div className="flex flex-row items-center gap-1">
-                        <div className="text-sm text-lime-500">¤</div>
-                        <div className="text-xs text-red-400">
+                      <div className="flex flex-row items-center gap-1 2xl:gap-1.5">
+                        <DiamondsFourIcon
+                          size={10}
+                          className="text-red-500 2xl:w-3 2xl:h-3"
+                          weight="fill"
+                        />
+                        <div className="text-xs 2xl:text-sm text-red-400">
                           <NumberFlow value={totalDebits} />
                         </div>
                       </div>
                     </div>
                     <div className="flex flex-row items-center justify-between">
-                      <span className="text-xs text-neutral-500 font-medium uppercase">
+                      <span className="text-xs 2xl:text-sm text-text-dim font-medium uppercase">
                         Transactions
                       </span>
-                      <span className="text-xs text-neutral-200">
+                      <span className="text-xs 2xl:text-sm text-text-medium">
                         <NumberFlow value={allTransactions.length} />
                       </span>
                     </div>
@@ -435,6 +500,7 @@ export default function AnalysisPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

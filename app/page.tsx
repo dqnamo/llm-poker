@@ -8,12 +8,17 @@ import {
   DiamondsFourIcon,
   MagnifyingGlass,
   X,
+  Gear,
+  CardsThree,
+  User,
+  Robot,
+  Minus,
 } from "@phosphor-icons/react";
-import FramedLink from "./components/FramedLink";
-import Button from "./components/Button";
+import AnimatedFramedLink from "./components/AnimatedFramedLink";
 import { useEffect, useState } from "react";
 import Footer from "./components/Footer";
 import { useRouter } from "next/navigation";
+import { CornerBorders } from "./components/GameSidebar";
 
 interface OpenRouterModel {
   id: string;
@@ -216,10 +221,10 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="flex flex-col h-dvh p-10 items-center justify-center">
-        <div className="text-neutral-200  w-max p-4 flex flex-col items-center gap-2">
+      <div className="flex flex-col h-dvh p-10 items-center justify-center bg-dark-1">
+        <div className="text-text-medium w-max p-4 flex flex-col items-center gap-2">
           <CircleNotch size={16} className="animate-spin" />
-          <p className="text-xs text-neutral-500 font-semibold uppercase">
+          <p className="text-xs text-text-dim font-semibold uppercase">
             Loading Models
           </p>
         </div>
@@ -228,288 +233,106 @@ export default function Home() {
   }
 
   return (
-    <div className="h-dvh bg-neutral-950 flex flex-col items-center justify-center p-8">
-      <div className="max-w-7xl mx-auto w-full grid grid-cols-3">
-        <div className="p-6 rounded-lg col-span-2">
-          <div className="flex flex-col col-span-2">
-            <div className="text-neutral-200  grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto w-full">
-              <div className="flex flex-row items-center justify-between col-span-3 mb-8">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-sm font-semibold">Model Selection</h1>
-                  </div>
-                  <p className="text-xs text-neutral-500 max-w-sm font-sans">
-                    Configure and start a poker simulation with AI models
-                  </p>
-                </div>
-                <div className="flex flex-row items-center gap-2">
-                  <FramedLink href="/history">
-                    <ChartScatterIcon size={16} />
-                    <p>Game History</p>
-                  </FramedLink>
-                  <FramedLink
-                    href="https://github.com/dqnamo/llm-poker"
-                    target="_blank"
-                  >
-                    <GithubLogoIcon size={16} />
-                    <p>Github</p>
-                  </FramedLink>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 relative col-span-3 lg:col-span-3 space-x-2">
-                <ModelSelector
-                  position={0}
-                  selection={seatSelections[0]}
-                  onSelect={() => openModelSelection(0)}
-                />
-                <ModelSelector
-                  position={1}
-                  selection={seatSelections[1]}
-                  onSelect={() => openModelSelection(1)}
-                />
-                <ModelSelector
-                  position={2}
-                  selection={seatSelections[2]}
-                  onSelect={() => openModelSelection(2)}
-                />
-                <PokerTable
-                  selectedCount={seatSelections.filter(Boolean).length}
-                />
-                <ModelSelector
-                  position={5}
-                  selection={seatSelections[5]}
-                  onSelect={() => openModelSelection(5)}
-                />
-                <ModelSelector
-                  position={4}
-                  selection={seatSelections[4]}
-                  onSelect={() => openModelSelection(4)}
-                />
-                <ModelSelector
-                  position={3}
-                  selection={seatSelections[3]}
-                  onSelect={() => openModelSelection(3)}
-                />
+    <div className="h-dvh bg-dark-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 2xl:p-12">
+      <div className="max-w-7xl 2xl:max-w-[1600px] 3xl:max-w-[1920px] mx-auto w-full">
+        {/* Header */}
+        <div className="flex flex-row items-center justify-between mb-4 2xl:mb-6">
+          <div className="flex flex-col gap-1 2xl:gap-2">
+            <div className="flex items-center gap-2 2xl:gap-3">
+              <h1 className="text-sm 2xl:text-base font-semibold text-text-bright uppercase">
+                LLM Poker
+              </h1>
+              <div className="text-xs 2xl:text-sm text-text-dim uppercase">
+                Configuration
               </div>
             </div>
+            <p className="text-xs 2xl:text-sm text-text-dim">
+              Configure AI models and start a poker simulation
+            </p>
+          </div>
+          <div className="flex flex-row items-center gap-2 2xl:gap-3">
+            <AnimatedFramedLink href="/history">
+              <ChartScatterIcon size={16} className="2xl:w-5 2xl:h-5" />
+              <p>History</p>
+            </AnimatedFramedLink>
+            <AnimatedFramedLink
+              href="https://github.com/dqnamo/llm-poker"
+              target="_blank"
+            >
+              <GithubLogoIcon size={16} className="2xl:w-5 2xl:h-5" />
+              <p>Github</p>
+            </AnimatedFramedLink>
           </div>
         </div>
-        <div className="relative h-0 min-h-full">
-          <div className="absolute inset-0 overflow-y-auto p-6">
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-4">
-                <h2 className="text-sm font-semibold text-neutral-200">
-                  Game Settings
-                </h2>
 
-                <div className="flex flex-col gap-2">
-                  <p className="text-xs text-neutral-400">Seats Configured</p>
-                  <p className="text-sm text-neutral-200">
-                    {seatSelections.filter(Boolean).length} / 6 seats filled
-                  </p>
-                </div>
+        {/* Main Grid */}
+        <div className="grid grid-cols-12 gap-4 2xl:gap-6">
+          {/* Table Section - 8 columns */}
+          <div className="col-span-8 border border-dark-5 relative">
+            <CornerBorders colorClass="border-dark-8" />
+            <div className="grid grid-cols-3">
+              {/* Top Row - Seats 0, 1, 2 */}
+              <SeatSelector
+                position={0}
+                selection={seatSelections[0]}
+                onSelect={() => openModelSelection(0)}
+              />
+              <SeatSelector
+                position={1}
+                selection={seatSelections[1]}
+                onSelect={() => openModelSelection(1)}
+              />
+              <SeatSelector
+                position={2}
+                selection={seatSelections[2]}
+                onSelect={() => openModelSelection(2)}
+              />
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs text-neutral-400">
-                    AI Provider
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setProvider("openrouter");
-                        localStorage.setItem(
-                          "llm-poker-provider",
-                          "openrouter"
-                        );
-                        setApiKey("");
-                        localStorage.removeItem("llm-poker-api-key");
-                        setError(null);
-                      }}
-                      className={`flex-1 px-3 py-2 text-xs rounded border transition-colors ${
-                        provider === "openrouter"
-                          ? "bg-emerald-950/50 border-emerald-700 text-emerald-300"
-                          : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700"
-                      }`}
-                    >
-                      OpenRouter
-                    </button>
-                    <button
-                      onClick={() => {
-                        setProvider("vercel-ai-gateway");
-                        localStorage.setItem(
-                          "llm-poker-provider",
-                          "vercel-ai-gateway"
-                        );
-                        setApiKey("");
-                        localStorage.removeItem("llm-poker-api-key");
-                        setError(null);
-                      }}
-                      className={`flex-1 px-3 py-2 text-xs rounded border transition-colors ${
-                        provider === "vercel-ai-gateway"
-                          ? "bg-emerald-950/50 border-emerald-700 text-emerald-300"
-                          : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700"
-                      }`}
-                    >
-                      Vercel AI Gateway
-                    </button>
-                  </div>
-                </div>
+              {/* Table Center */}
+              <PokerTable
+                selectedCount={seatSelections.filter(Boolean).length}
+              />
 
-                <div className="flex flex-col gap-2">
-                  <label className="text-xs text-neutral-400">
-                    {provider === "vercel-ai-gateway"
-                      ? "Vercel AI Gateway API Key"
-                      : "OpenRouter API Key"}
-                  </label>
-                  <input
-                    type="password"
-                    value={apiKey}
-                    onChange={(e) => {
-                      setApiKey(e.target.value);
-                      if (e.target.value.trim()) {
-                        localStorage.setItem(
-                          "llm-poker-api-key",
-                          e.target.value.trim()
-                        );
-                      } else {
-                        localStorage.removeItem("llm-poker-api-key");
-                      }
-                      setError(null);
-                    }}
-                    placeholder={
-                      provider === "vercel-ai-gateway"
-                        ? "Enter your Vercel AI Gateway key"
-                        : "sk-or-..."
-                    }
-                    className="bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm text-neutral-200 focus:outline-none focus:border-neutral-700 placeholder:text-neutral-600 rounded"
-                  />
-                  <p className="text-xs text-neutral-500">
-                    {provider === "vercel-ai-gateway"
-                      ? "Get your key from Vercel Dashboard → AI Gateway"
-                      : "Required to run AI models via OpenRouter"}
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <p className="text-xs text-neutral-400">Starting Stack</p>
-                  <input
-                    type="number"
-                    value={startingStack}
-                    onChange={(e) => setStartingStack(Number(e.target.value))}
-                    min="100"
-                    max="100000"
-                    className="bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm text-neutral-200 focus:outline-none focus:border-neutral-700 placeholder:text-neutral-600 rounded"
-                  />
-                  <p className="text-xs text-neutral-500">
-                    Minimum: 100, Maximum: 100,000
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <p className="text-xs text-neutral-400">Number of Hands</p>
-                  <input
-                    type="number"
-                    value={numberOfHands}
-                    onChange={(e) => setNumberOfHands(Number(e.target.value))}
-                    min="1"
-                    max="100"
-                    className="bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm text-neutral-200 focus:outline-none focus:border-neutral-700 placeholder:text-neutral-600 rounded"
-                  />
-                  <p className="text-xs text-neutral-500">
-                    Minimum: 1, Maximum: 100
-                  </p>
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <p className="text-xs text-neutral-400">Estimated Cost</p>
-                  <div className="bg-neutral-900 border border-neutral-800 p-3 rounded">
-                    <p className="text-xs text-neutral-300">
-                      ~{numberOfHands * 6 * 4} API calls
-                    </p>
-                    <p className="text-[10px] text-neutral-500">
-                      Actual cost depends on selected models
-                    </p>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="bg-red-950/20 border border-red-900 p-3 rounded">
-                    <p className="text-xs text-red-400">{error}</p>
-                  </div>
-                )}
-
-                <Button
-                  onClick={startGame}
-                  disabled={!canStartGame || isStartingGame}
-                  className="w-full"
-                >
-                  {isStartingGame ? (
-                    <>
-                      <CircleNotch size={16} className="animate-spin" />
-                      Starting Game...
-                    </>
-                  ) : (
-                    <>
-                      <Play size={16} />
-                      Start Game
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {seatSelections.some(Boolean) && (
-                <div className="flex flex-col gap-4">
-                  <h3 className="text-sm font-semibold text-neutral-200">
-                    Seat Configuration
-                  </h3>
-                  <div className="flex flex-col gap-2">
-                    {seatSelections.map(
-                      (selection, index) =>
-                        selection && (
-                          <div
-                            key={`${index}-${selection.type}`}
-                            className="flex flex-col gap-1 p-3 bg-neutral-900 rounded-lg"
-                          >
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs font-medium text-neutral-200">
-                                Position {index + 1}
-                              </p>
-                              <button
-                                onClick={() => updateSeatSelection(index, null)}
-                                className="text-xs text-neutral-500 hover:text-neutral-300"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                            {selection.type === "model" && (
-                              <p className="text-xs text-neutral-400 truncate">
-                                {selection.model.name}
-                              </p>
-                            )}
-                            {selection.type === "empty" && (
-                              <p className="text-xs text-neutral-500 italic">
-                                Empty Seat
-                              </p>
-                            )}
-                            {selection.type === "human" && (
-                              <p className="text-xs text-lime-400">
-                                Human Player
-                              </p>
-                            )}
-                          </div>
-                        )
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-col gap-2">
-                <p className="text-xs text-neutral-400">Available Models</p>
-                <p className="text-xs text-neutral-500">
-                  {models.length} models support tool calling
-                </p>
-              </div>
+              {/* Bottom Row - Seats 5, 4, 3 */}
+              <SeatSelector
+                position={5}
+                selection={seatSelections[5]}
+                onSelect={() => openModelSelection(5)}
+              />
+              <SeatSelector
+                position={4}
+                selection={seatSelections[4]}
+                onSelect={() => openModelSelection(4)}
+              />
+              <SeatSelector
+                position={3}
+                selection={seatSelections[3]}
+                onSelect={() => openModelSelection(3)}
+              />
             </div>
+          </div>
+
+          {/* Sidebar - 4 columns */}
+          <div className="col-span-4 min-h-full h-0 flex flex-col relative">
+            <CornerBorders colorClass="border-dark-8" />
+            <ConfigurationSidebar
+              seatSelections={seatSelections}
+              provider={provider}
+              setProvider={setProvider}
+              apiKey={apiKey}
+              setApiKey={setApiKey}
+              startingStack={startingStack}
+              setStartingStack={setStartingStack}
+              numberOfHands={numberOfHands}
+              setNumberOfHands={setNumberOfHands}
+              error={error}
+              setError={setError}
+              canStartGame={canStartGame}
+              isStartingGame={isStartingGame}
+              startGame={startGame}
+              updateSeatSelection={updateSeatSelection}
+              modelsCount={models.length}
+            />
           </div>
         </div>
       </div>
@@ -532,7 +355,7 @@ export default function Home() {
   );
 }
 
-const ModelSelector = ({
+const SeatSelector = ({
   position,
   selection,
   onSelect,
@@ -542,52 +365,490 @@ const ModelSelector = ({
   onSelect: () => void;
 }) => {
   return (
-    <div className="p-px overflow-hidden relative rounded-md h-full flex flex-col">
-      <div className="bg-neutral-950 relative hover:bg-neutral-900 flex flex-col h-full rounded-md transition-colors">
-        <div className="flex flex-col lg:flex-row items-start gap-2 justify-between p-4">
-          <div className="flex flex-col h-full w-full">
-            <div className="text-xs font-semibold font-sans text-neutral-400 mb-2">
-              Position {position + 1}
+    <div className="p-px bg-dark-4 overflow-hidden relative h-full min-h-[120px] 2xl:min-h-[160px] flex flex-col transition-colors cursor-pointer group">
+      <button
+        onClick={onSelect}
+        className="relative bg-dark-2 hover:bg-dark-3 flex flex-col flex-1 transition-colors w-full text-left"
+      >
+        <div className="flex flex-col lg:flex-row items-start gap-4 2xl:gap-6 justify-between p-4 2xl:p-6 h-full">
+          <div className="flex flex-col flex-1 w-full">
+            <div className="text-xs 2xl:text-sm font-semibold text-text-dim uppercase mb-2 2xl:mb-3">
+              Seat {position + 1}
             </div>
 
-            <button
-              onClick={onSelect}
-              className="w-full text-left p-3 bg-neutral-900 border border-neutral-800 rounded-lg hover:border-neutral-700 transition-colors cursor-pointer"
-            >
-              {selection ? (
-                <div className="flex flex-col gap-1">
-                  {selection.type === "model" && (
-                    <>
-                      <span className="text-xs text-neutral-200 truncate font-medium">
+            {selection ? (
+              <div className="flex flex-col gap-2 2xl:gap-3">
+                {selection.type === "model" && (
+                  <>
+                    <div className="flex items-center gap-2 2xl:gap-3">
+                      <Robot
+                        size={14}
+                        className="text-sky-500 2xl:w-5 2xl:h-5"
+                        weight="fill"
+                      />
+                      <span className="text-xs 2xl:text-sm text-text-bright font-medium truncate">
                         {selection.model.name}
                       </span>
-                      <span className="text-[10px] text-neutral-500 truncate">
-                        {selection.model.slug}
-                      </span>
-                    </>
-                  )}
-                  {selection.type === "empty" && (
-                    <span className="text-xs text-neutral-500 italic text-center py-2">
+                    </div>
+                    <span className="text-xs 2xl:text-sm text-text-dim truncate">
+                      {selection.model.slug}
+                    </span>
+                  </>
+                )}
+                {selection.type === "empty" && (
+                  <div className="flex items-center gap-2 2xl:gap-3">
+                    <Minus size={14} className="text-dark-10 2xl:w-5 2xl:h-5" />
+                    <span className="text-xs 2xl:text-sm text-text-dim italic">
                       Empty Seat
                     </span>
-                  )}
-                  {selection.type === "human" && (
-                    <span className="text-xs text-lime-400 font-medium text-center py-2">
+                  </div>
+                )}
+                {selection.type === "human" && (
+                  <div className="flex items-center gap-2 2xl:gap-3">
+                    <User
+                      size={14}
+                      className="text-green-500 2xl:w-5 2xl:h-5"
+                      weight="fill"
+                    />
+                    <span className="text-xs 2xl:text-sm text-green-400 font-medium">
                       Human Player
                     </span>
-                  )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 2xl:gap-4 py-2 2xl:py-3">
+                <div className="w-8 h-8 2xl:w-10 2xl:h-10 border border-dashed border-dark-8 flex items-center justify-center">
+                  <CardsThree
+                    size={16}
+                    className="text-dark-8 2xl:w-5 2xl:h-5"
+                  />
                 </div>
-              ) : (
-                <div className="flex items-center justify-center gap-2 py-4">
-                  <span className="text-xs text-neutral-500">
-                    Configure Seat
-                  </span>
-                  <div className="w-4 h-4 border border-dashed border-neutral-600 rounded"></div>
-                </div>
-              )}
-            </button>
+                <span className="text-xs 2xl:text-sm text-text-dim">
+                  Configure seat
+                </span>
+              </div>
+            )}
           </div>
         </div>
+      </button>
+    </div>
+  );
+};
+
+const PokerTable = ({ selectedCount }: { selectedCount: number }) => {
+  return (
+    <div className="border-y border-dark-5 p-8 lg:p-12 2xl:p-16 col-span-3 bg-dark-2 relative">
+      {/* Subtle grid pattern */}
+      <div
+        className="absolute inset-0 opacity-30"
+        style={{
+          backgroundImage: `
+            linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px)
+          `,
+          backgroundSize: "20px 20px",
+        }}
+      />
+
+      <div className="flex flex-col items-center justify-center relative z-10 h-40 2xl:h-56">
+        {/* Status display */}
+        <div
+          className={`flex flex-row items-center gap-2 2xl:gap-3 bg-dark-2 border px-4 py-3 2xl:px-6 2xl:py-4 ${
+            selectedCount === 6 ? "border-green-900/50" : "border-dark-6"
+          }`}
+        >
+          <DiamondsFourIcon
+            size={18}
+            className={`2xl:w-6 2xl:h-6 ${
+              selectedCount === 6 ? "text-green-500" : "text-dark-10"
+            }`}
+            weight="fill"
+          />
+          <div className="flex flex-col">
+            <div
+              className={`text-sm 2xl:text-base font-semibold ${
+                selectedCount === 6 ? "text-text-bright" : "text-text-medium"
+              }`}
+            >
+              LLM Poker
+            </div>
+            <div className="text-xs 2xl:text-sm text-text-dim">
+              {selectedCount} / 6 seats configured
+            </div>
+          </div>
+        </div>
+
+        {selectedCount === 6 && (
+          <div className="mt-4 2xl:mt-6 flex items-center gap-2 2xl:gap-3">
+            <div className="w-2 h-2 2xl:w-2.5 2xl:h-2.5 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-xs 2xl:text-sm text-green-400 uppercase font-medium">
+              Ready to start
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const ConfigurationSidebar = ({
+  seatSelections,
+  provider,
+  setProvider,
+  apiKey,
+  setApiKey,
+  startingStack,
+  setStartingStack,
+  numberOfHands,
+  setNumberOfHands,
+  error,
+  setError,
+  canStartGame,
+  isStartingGame,
+  startGame,
+  updateSeatSelection,
+  modelsCount,
+}: {
+  seatSelections: SeatSelection[];
+  provider: AIProvider;
+  setProvider: (p: AIProvider) => void;
+  apiKey: string;
+  setApiKey: (k: string) => void;
+  startingStack: number;
+  setStartingStack: (n: number) => void;
+  numberOfHands: number;
+  setNumberOfHands: (n: number) => void;
+  error: string | null;
+  setError: (e: string | null) => void;
+  canStartGame: boolean;
+  isStartingGame: boolean;
+  startGame: () => void;
+  updateSeatSelection: (position: number, selection: SeatSelection) => void;
+  modelsCount: number;
+}) => {
+  const [activeTab, setActiveTab] = useState<"settings" | "seats">("settings");
+
+  return (
+    <div className="flex flex-col h-full overflow-y-auto bg-dark-2 border border-dark-5 relative">
+      <CornerBorders colorClass="border-dark-10" />
+
+      {/* Tab Navigation */}
+      <div className="relative flex bg-dark-3 border-b border-dark-5 p-1 2xl:p-1.5">
+        <button
+          onClick={() => setActiveTab("settings")}
+          className={`relative z-10 flex-1 flex items-center justify-center gap-2 2xl:gap-3 px-2 py-2 2xl:px-3 2xl:py-3 text-xs 2xl:text-sm font-medium uppercase transition-colors ${
+            activeTab === "settings"
+              ? "text-text-bright bg-dark-5"
+              : "text-text-dim hover:text-text-medium"
+          }`}
+        >
+          <Gear size={14} className="text-orange-500 2xl:w-5 2xl:h-5" />
+          <span>Settings</span>
+        </button>
+        <button
+          onClick={() => setActiveTab("seats")}
+          className={`relative z-10 flex-1 flex items-center justify-center gap-2 2xl:gap-3 px-2 py-2 2xl:px-3 2xl:py-3 text-xs 2xl:text-sm font-medium uppercase transition-colors ${
+            activeTab === "seats"
+              ? "text-text-bright bg-dark-5"
+              : "text-text-dim hover:text-text-medium"
+          }`}
+        >
+          <CardsThree size={14} className="text-sky-500 2xl:w-5 2xl:h-5" />
+          <span>Seats</span>
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      <div className="overflow-y-auto flex-1">
+        {activeTab === "settings" && (
+          <div className="space-y-0">
+            {/* AI Provider Section */}
+            <div className="bg-dark-2 border-b border-dark-5">
+              <div className="p-3 2xl:p-4 border-b border-dark-5">
+                <h3 className="text-xs 2xl:text-sm font-medium uppercase text-text-bright">
+                  AI Provider
+                </h3>
+              </div>
+              <div className="p-3 2xl:p-4">
+                <div className="flex gap-2 2xl:gap-3">
+                  <button
+                    onClick={() => {
+                      setProvider("openrouter");
+                      localStorage.setItem("llm-poker-provider", "openrouter");
+                      setApiKey("");
+                      localStorage.removeItem("llm-poker-api-key");
+                      setError(null);
+                    }}
+                    className={`flex-1 px-3 py-2 2xl:px-4 2xl:py-3 text-xs 2xl:text-sm border transition-colors ${
+                      provider === "openrouter"
+                        ? "bg-green-950/30 border-green-900/50 text-green-400"
+                        : "bg-dark-3 border-dark-6 text-text-dim hover:border-dark-8"
+                    }`}
+                  >
+                    OpenRouter
+                  </button>
+                  <button
+                    onClick={() => {
+                      setProvider("vercel-ai-gateway");
+                      localStorage.setItem(
+                        "llm-poker-provider",
+                        "vercel-ai-gateway"
+                      );
+                      setApiKey("");
+                      localStorage.removeItem("llm-poker-api-key");
+                      setError(null);
+                    }}
+                    className={`flex-1 px-3 py-2 2xl:px-4 2xl:py-3 text-xs 2xl:text-sm border transition-colors ${
+                      provider === "vercel-ai-gateway"
+                        ? "bg-green-950/30 border-green-900/50 text-green-400"
+                        : "bg-dark-3 border-dark-6 text-text-dim hover:border-dark-8"
+                    }`}
+                  >
+                    Vercel AI
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* API Key Section */}
+            <div className="bg-dark-2 border-b border-dark-5">
+              <div className="p-3 2xl:p-4 border-b border-dark-5">
+                <h3 className="text-xs 2xl:text-sm font-medium uppercase text-text-bright">
+                  {provider === "vercel-ai-gateway"
+                    ? "Vercel AI Gateway Key"
+                    : "OpenRouter API Key"}
+                </h3>
+              </div>
+              <div className="p-3 2xl:p-4">
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => {
+                    setApiKey(e.target.value);
+                    if (e.target.value.trim()) {
+                      localStorage.setItem(
+                        "llm-poker-api-key",
+                        e.target.value.trim()
+                      );
+                    } else {
+                      localStorage.removeItem("llm-poker-api-key");
+                    }
+                    setError(null);
+                  }}
+                  placeholder={
+                    provider === "vercel-ai-gateway"
+                      ? "Enter your Vercel AI Gateway key"
+                      : "sk-or-..."
+                  }
+                  className="w-full bg-dark-3 border border-dark-6 px-3 py-2 2xl:px-4 2xl:py-3 text-xs 2xl:text-sm text-text-medium focus:outline-none focus:border-dark-8 placeholder:text-dark-10"
+                />
+                <p className="text-xs 2xl:text-sm text-text-dim mt-2 2xl:mt-3">
+                  {provider === "vercel-ai-gateway"
+                    ? "From Vercel Dashboard → AI Gateway"
+                    : "Required to run AI models"}
+                </p>
+              </div>
+            </div>
+
+            {/* Game Settings Section */}
+            <div className="bg-dark-2 border-b border-dark-5">
+              <div className="p-3 2xl:p-4 border-b border-dark-5">
+                <h3 className="text-xs 2xl:text-sm font-medium uppercase text-text-bright">
+                  Game Settings
+                </h3>
+              </div>
+              <div className="p-3 2xl:p-4 space-y-4 2xl:space-y-6">
+                <div className="flex flex-col gap-2 2xl:gap-3">
+                  <label className="text-xs 2xl:text-sm text-text-dim">
+                    Starting Stack
+                  </label>
+                  <div className="flex items-center gap-2 2xl:gap-3">
+                    <DiamondsFourIcon
+                      size={14}
+                      className="text-green-500 2xl:w-5 2xl:h-5"
+                      weight="fill"
+                    />
+                    <input
+                      type="number"
+                      value={startingStack}
+                      onChange={(e) => setStartingStack(Number(e.target.value))}
+                      min="100"
+                      max="100000"
+                      className="flex-1 bg-dark-3 border border-dark-6 px-3 py-2 2xl:px-4 2xl:py-3 text-xs 2xl:text-sm text-text-medium focus:outline-none focus:border-dark-8"
+                    />
+                  </div>
+                  <p className="text-xs 2xl:text-sm text-text-dim">
+                    Range: 100 - 100,000
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-2 2xl:gap-3">
+                  <label className="text-xs 2xl:text-sm text-text-dim">
+                    Number of Hands
+                  </label>
+                  <input
+                    type="number"
+                    value={numberOfHands}
+                    onChange={(e) => setNumberOfHands(Number(e.target.value))}
+                    min="1"
+                    max="100"
+                    className="w-full bg-dark-3 border border-dark-6 px-3 py-2 2xl:px-4 2xl:py-3 text-xs 2xl:text-sm text-text-medium focus:outline-none focus:border-dark-8"
+                  />
+                  <p className="text-xs 2xl:text-sm text-text-dim">
+                    Range: 1 - 100
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Cost Estimate */}
+            <div className="bg-dark-2 border-b border-dark-5">
+              <div className="p-3 2xl:p-4 border-b border-dark-5">
+                <h3 className="text-xs 2xl:text-sm font-medium uppercase text-text-bright">
+                  Estimated Calls
+                </h3>
+              </div>
+              <div className="p-3 2xl:p-4">
+                <div className="flex justify-between text-xs 2xl:text-sm">
+                  <span className="text-text-dim">API Calls</span>
+                  <span className="text-text-medium">
+                    ~{numberOfHands * 6 * 4}
+                  </span>
+                </div>
+                <p className="text-xs 2xl:text-sm text-text-dim mt-2 2xl:mt-3">
+                  Cost depends on selected models
+                </p>
+              </div>
+            </div>
+
+            {/* Info Section */}
+            <div className="bg-dark-2 border-b border-dark-5">
+              <div className="p-3 2xl:p-4">
+                <div className="flex justify-between text-xs 2xl:text-sm">
+                  <span className="text-text-dim">Available Models</span>
+                  <span className="text-text-medium">{modelsCount}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Error Display */}
+            {error && (
+              <div className="bg-red-950/20 border-b border-red-900/50">
+                <div className="p-3 2xl:p-4">
+                  <p className="text-xs 2xl:text-sm text-red-400">{error}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Start Button */}
+            <div className="p-3 2xl:p-4">
+              <button
+                onClick={startGame}
+                disabled={!canStartGame || isStartingGame}
+                className={`w-full flex items-center justify-center gap-2 2xl:gap-3 px-4 py-3 2xl:px-6 2xl:py-4 text-xs 2xl:text-sm font-semibold uppercase transition-colors ${
+                  canStartGame && !isStartingGame
+                    ? "bg-green-950/50 border border-green-900/50 text-green-400 hover:bg-green-950/70"
+                    : "bg-dark-3 border border-dark-6 text-text-dim cursor-not-allowed"
+                }`}
+              >
+                {isStartingGame ? (
+                  <>
+                    <CircleNotch
+                      size={14}
+                      className="animate-spin 2xl:w-5 2xl:h-5"
+                    />
+                    Starting Game...
+                  </>
+                ) : (
+                  <>
+                    <Play size={14} weight="fill" className="2xl:w-5 2xl:h-5" />
+                    Start Game
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === "seats" && (
+          <div className="space-y-0">
+            <div className="p-3 2xl:p-4 border-b border-dark-5">
+              <h3 className="text-xs 2xl:text-sm font-medium uppercase text-text-bright">
+                Seat Configuration
+              </h3>
+              <p className="text-xs 2xl:text-sm text-text-dim">
+                {seatSelections.filter(Boolean).length} / 6 seats configured
+              </p>
+            </div>
+
+            <div className="divide-y divide-dark-5">
+              {seatSelections.map((selection, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 2xl:p-4 bg-dark-2 hover:bg-dark-3 transition-colors"
+                >
+                  <div className="flex items-center gap-3 2xl:gap-4">
+                    <span className="text-xs 2xl:text-sm font-medium text-text-dim uppercase">
+                      Seat {index + 1}
+                    </span>
+                    {selection ? (
+                      <div className="flex items-center gap-2 2xl:gap-3">
+                        {selection.type === "model" && (
+                          <>
+                            <Robot
+                              size={12}
+                              className="text-sky-500 2xl:w-4 2xl:h-4"
+                              weight="fill"
+                            />
+                            <span className="text-xs 2xl:text-sm text-text-medium truncate max-w-[120px] 2xl:max-w-[180px]">
+                              {selection.model.name}
+                            </span>
+                          </>
+                        )}
+                        {selection.type === "empty" && (
+                          <>
+                            <Minus
+                              size={12}
+                              className="text-dark-10 2xl:w-4 2xl:h-4"
+                            />
+                            <span className="text-xs 2xl:text-sm text-text-dim italic">
+                              Empty
+                            </span>
+                          </>
+                        )}
+                        {selection.type === "human" && (
+                          <>
+                            <User
+                              size={12}
+                              className="text-green-500 2xl:w-4 2xl:h-4"
+                              weight="fill"
+                            />
+                            <span className="text-xs 2xl:text-sm text-green-400">
+                              Human
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs 2xl:text-sm text-dark-10 italic">
+                        Not configured
+                      </span>
+                    )}
+                  </div>
+                  {selection && (
+                    <button
+                      onClick={() => updateSeatSelection(index, null)}
+                      className="text-xs 2xl:text-sm text-text-dim hover:text-red-400 transition-colors"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -634,84 +895,104 @@ const ModelSelectionModal = ({
 
   if (view === "options") {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-neutral-900 border border-neutral-800 rounded-lg w-full max-w-md flex flex-col">
+      <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+        <div className="bg-dark-2 border border-dark-5 w-full max-w-md flex flex-col relative">
+          <CornerBorders colorClass="border-dark-10" />
+
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-neutral-800">
+          <div className="flex items-center justify-between p-4 2xl:p-6 border-b border-dark-5">
             <div className="flex flex-col gap-1">
-              <h2 className="text-sm font-semibold text-neutral-200">
-                Configure Position {position + 1}
+              <h2 className="text-sm 2xl:text-base font-semibold text-text-bright uppercase">
+                Configure Seat {position + 1}
               </h2>
-              <p className="text-xs text-neutral-500">Choose seat type</p>
+              <p className="text-xs 2xl:text-sm text-text-dim">
+                Choose seat type
+              </p>
             </div>
             <button
               onClick={onClose}
-              className="text-neutral-500 hover:text-neutral-300 transition-colors"
+              className="text-text-dim hover:text-text-medium transition-colors"
             >
-              <X size={16} />
+              <X size={16} className="2xl:w-5 2xl:h-5" />
             </button>
           </div>
 
           {/* Options */}
-          <div className="p-4 flex flex-col gap-2">
+          <div className="p-4 2xl:p-6 flex flex-col gap-3 2xl:gap-4">
             <button
               onClick={() => setView("models")}
-              className="w-full text-left p-4 bg-neutral-800 hover:bg-neutral-750 rounded-lg transition-colors border border-neutral-700 hover:border-neutral-600"
+              className="w-full text-left p-4 2xl:p-5 bg-dark-3 hover:bg-dark-4 transition-colors border border-dark-6 hover:border-dark-8"
             >
-              <div className="flex flex-col gap-1">
-                <span className="text-sm text-neutral-200 font-medium">
-                  AI Player
-                </span>
-                <span className="text-xs text-neutral-500">
-                  Select an AI model to play
-                </span>
+              <div className="flex items-center gap-3 2xl:gap-4">
+                <Robot
+                  size={18}
+                  className="text-sky-500 2xl:w-6 2xl:h-6"
+                  weight="fill"
+                />
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm 2xl:text-base text-text-bright font-medium">
+                    AI Player
+                  </span>
+                  <span className="text-xs 2xl:text-sm text-text-dim">
+                    Select an AI model to play
+                  </span>
+                </div>
               </div>
             </button>
 
             <button
-              onClick={() => {
-                onSelect({ type: "empty" });
-              }}
-              className="w-full text-left p-4 bg-neutral-800 hover:bg-neutral-750 rounded-lg transition-colors border border-neutral-700 hover:border-neutral-600"
+              onClick={() => onSelect({ type: "empty" })}
+              className="w-full text-left p-4 2xl:p-5 bg-dark-3 hover:bg-dark-4 transition-colors border border-dark-6 hover:border-dark-8"
             >
-              <div className="flex flex-col gap-1">
-                <span className="text-sm text-neutral-200 font-medium">
-                  Empty Seat
-                </span>
-                <span className="text-xs text-neutral-500">
-                  Leave this seat empty
-                </span>
+              <div className="flex items-center gap-3 2xl:gap-4">
+                <Minus size={18} className="text-dark-10 2xl:w-6 2xl:h-6" />
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm 2xl:text-base text-text-bright font-medium">
+                    Empty Seat
+                  </span>
+                  <span className="text-xs 2xl:text-sm text-text-dim">
+                    Leave this seat empty
+                  </span>
+                </div>
               </div>
             </button>
 
             <button
-              onClick={() => {
-                onSelect({ type: "human" });
-              }}
-              className="w-full text-left p-4 bg-neutral-800 hover:bg-neutral-750 rounded-lg transition-colors border border-neutral-700 hover:border-neutral-600"
+              onClick={() => onSelect({ type: "human" })}
+              className="w-full text-left p-4 2xl:p-5 bg-dark-3 hover:bg-dark-4 transition-colors border border-dark-6 hover:border-dark-8"
             >
-              <div className="flex flex-col gap-1">
-                <span className="text-sm text-lime-400 font-medium">
-                  Human Player
-                </span>
-                <span className="text-xs text-neutral-500">
-                  Reserve for human player
-                </span>
+              <div className="flex items-center gap-3 2xl:gap-4">
+                <User
+                  size={18}
+                  className="text-green-500 2xl:w-6 2xl:h-6"
+                  weight="fill"
+                />
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm 2xl:text-base text-green-400 font-medium">
+                    Human Player
+                  </span>
+                  <span className="text-xs 2xl:text-sm text-text-dim">
+                    Reserve for human player
+                  </span>
+                </div>
               </div>
             </button>
 
             {currentSelection && (
               <button
                 onClick={() => onSelect(null)}
-                className="w-full text-left p-4 bg-red-950/20 hover:bg-red-950/30 rounded-lg transition-colors border border-red-900/50 hover:border-red-900"
+                className="w-full text-left p-4 2xl:p-5 bg-red-950/20 hover:bg-red-950/30 transition-colors border border-red-900/50 hover:border-red-900"
               >
-                <div className="flex flex-col gap-1">
-                  <span className="text-sm text-red-400 font-medium">
-                    Clear Selection
-                  </span>
-                  <span className="text-xs text-neutral-500">
-                    Remove configuration from this seat
-                  </span>
+                <div className="flex items-center gap-3 2xl:gap-4">
+                  <X size={18} className="text-red-400 2xl:w-6 2xl:h-6" />
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm 2xl:text-base text-red-400 font-medium">
+                      Clear Selection
+                    </span>
+                    <span className="text-xs 2xl:text-sm text-text-dim">
+                      Remove configuration from this seat
+                    </span>
+                  </div>
                 </div>
               </button>
             )}
@@ -723,167 +1004,120 @@ const ModelSelectionModal = ({
 
   // Models view
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-neutral-900 border border-neutral-800 rounded-lg w-full max-w-2xl max-h-[80vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+      <div className="bg-dark-2 border border-dark-5 w-full max-w-2xl max-h-[80vh] flex flex-col relative">
+        <CornerBorders colorClass="border-dark-10" />
+
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-neutral-800">
+        <div className="flex items-center justify-between p-4 2xl:p-6 border-b border-dark-5">
           <div className="flex flex-col gap-1">
-            <h2 className="text-sm font-semibold text-neutral-200">
-              Select AI Model for Position {position + 1}
+            <h2 className="text-sm 2xl:text-base font-semibold text-text-bright uppercase">
+              Select AI Model
             </h2>
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs 2xl:text-sm text-text-dim">
               {models.length} models available with tool support
             </p>
           </div>
           <button
             onClick={() => setView("options")}
-            className="text-neutral-500 hover:text-neutral-300 transition-colors"
+            className="text-text-dim hover:text-text-medium transition-colors"
           >
-            <X size={16} />
+            <X size={16} className="2xl:w-5 2xl:h-5" />
           </button>
         </div>
 
         {/* Search */}
-        <div className="p-4 border-b border-neutral-800">
+        <div className="p-4 2xl:p-6 border-b border-dark-5">
           <div className="relative">
             <MagnifyingGlass
               size={16}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
+              className="absolute left-3 2xl:left-4 top-1/2 transform -translate-y-1/2 text-text-dim 2xl:w-5 2xl:h-5"
             />
             <input
               type="text"
               placeholder="Search models..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-sm text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-600"
+              className="w-full pl-10 pr-4 py-2 2xl:pl-12 2xl:pr-6 2xl:py-3 bg-dark-3 border border-dark-6 text-sm 2xl:text-base text-text-medium placeholder-text-dim focus:outline-none focus:border-dark-8"
             />
           </div>
         </div>
 
         {/* Model List */}
-        <div className="flex-1 overflow-y-auto p-2">
+        <div className="flex-1 overflow-y-auto">
           {filteredModels.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-sm text-neutral-500">
+            <div className="text-center py-8 2xl:py-12">
+              <p className="text-sm 2xl:text-base text-text-dim">
                 No models found matching your search
               </p>
             </div>
           ) : (
-            filteredModels.map((model) => (
-              <button
-                key={model.id}
-                onClick={() =>
-                  onSelect({
-                    type: "model",
-                    model: {
-                      id: model.id,
-                      name: model.name,
-                      slug: model.canonical_slug,
-                    },
-                  })
-                }
-                className={`w-full text-left p-3 hover:bg-neutral-800 rounded-lg transition-colors ${
-                  currentSelection?.type === "model" &&
-                  currentSelection.model.id === model.id
-                    ? "bg-neutral-800 border border-neutral-700"
-                    : ""
-                }`}
-              >
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-start justify-between">
-                    <div className="flex flex-col gap-1 flex-1 min-w-0">
-                      <span className="text-xs text-neutral-200 font-medium truncate">
-                        {model.name}
-                      </span>
-                      <span className="text-[10px] text-neutral-500 truncate">
-                        {model.id}
-                      </span>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 ml-2">
-                      <span className="text-[10px] text-neutral-600">
-                        {Math.round(model.context_length / 1000)}k context
-                      </span>
-                      <div className="flex gap-1">
-                        <span className="text-[9px] text-neutral-600 bg-neutral-800 px-1 py-0.5 rounded">
-                          ${parseFloat(model.pricing.prompt) * 1000000}M
+            <div className="divide-y divide-dark-5">
+              {filteredModels.map((model) => (
+                <button
+                  key={model.id}
+                  onClick={() =>
+                    onSelect({
+                      type: "model",
+                      model: {
+                        id: model.id,
+                        name: model.name,
+                        slug: model.canonical_slug,
+                      },
+                    })
+                  }
+                  className={`w-full text-left p-4 2xl:p-5 hover:bg-dark-3 transition-colors ${
+                    currentSelection?.type === "model" &&
+                    currentSelection.model.id === model.id
+                      ? "bg-dark-3 border-l-2 border-l-green-500"
+                      : ""
+                  }`}
+                >
+                  <div className="flex flex-col gap-2 2xl:gap-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex flex-col gap-1 flex-1 min-w-0">
+                        <span className="text-xs 2xl:text-sm text-text-bright font-medium truncate">
+                          {model.name}
+                        </span>
+                        <span className="text-xs 2xl:text-sm text-text-dim truncate">
+                          {model.id}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 ml-2 2xl:ml-4">
+                        <span className="text-xs 2xl:text-sm text-text-dim">
+                          {Math.round(model.context_length / 1000)}k ctx
+                        </span>
+                        <span className="text-xs 2xl:text-sm text-dark-10 bg-dark-4 px-2 py-0.5 2xl:px-3 2xl:py-1">
+                          $
+                          {(parseFloat(model.pricing.prompt) * 1000000).toFixed(
+                            2
+                          )}
+                          /M
                         </span>
                       </div>
                     </div>
+                    {model.description && (
+                      <p className="text-xs 2xl:text-sm text-text-dim line-clamp-2">
+                        {model.description}
+                      </p>
+                    )}
                   </div>
-                  {model.description && (
-                    <p className="text-[10px] text-neutral-600 line-clamp-2">
-                      {model.description}
-                    </p>
-                  )}
-                </div>
-              </button>
-            ))
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-neutral-800">
-          <div className="flex items-center justify-between text-xs text-neutral-500">
+        <div className="p-4 2xl:p-6 border-t border-dark-5">
+          <div className="flex items-center justify-between text-xs 2xl:text-sm text-text-dim">
             <button
               onClick={() => setView("options")}
-              className="hover:text-neutral-300 transition-colors"
+              className="hover:text-text-medium transition-colors"
             >
               ← Back to options
             </button>
             <span>{filteredModels.length} models shown</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const PokerTable = ({ selectedCount }: { selectedCount: number }) => {
-  return (
-    <div className="col-span-6 relative perspective-[1000px] mb-8 w-[95%] mx-auto">
-      <div
-        className="bg-radial w-full from-emerald-700 to-emerald-950 p-20 rounded-full relative overflow-hidden transform-gpu"
-        style={{
-          transform: "rotateX(28deg)",
-          transformStyle: "preserve-3d",
-          boxShadow:
-            "inset 0 4px 20px rgba(255, 255, 255, 0.15), inset 0 -4px 20px rgba(0, 0, 0, 0.4)",
-          border: "20px solid transparent",
-          backgroundImage: `
-            radial-gradient(ellipse at center, #10b981 0%, #065f46 100%),
-            linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 25%, #0f0f0f 50%, #171717 75%, #1f1f1f 100%)
-          `,
-          backgroundOrigin: "padding-box, border-box",
-          backgroundClip: "padding-box, border-box",
-        }}
-      >
-        {/* Subtle diamond/cube pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-12"
-          style={{
-            backgroundImage: `linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.08) 25%, rgba(255,255,255,0.08) 50%, transparent 50%, transparent 75%, rgba(255,255,255,0.08) 75%),
-                             linear-gradient(-45deg, transparent 25%, rgba(255,255,255,0.08) 25%, rgba(255,255,255,0.08) 50%, transparent 50%, transparent 75%, rgba(255,255,255,0.08) 75%)`,
-            backgroundSize: "24px 24px",
-            backgroundPosition: "0 0, 12px 12px",
-          }}
-        />
-
-        {/* Diamond icon imprint on felt */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-5">
-          <DiamondsFourIcon size={120} className="text-white" weight="fill" />
-        </div>
-
-        <div className="flex flex-col items-center justify-center relative z-10 min-h-[120px]">
-          <div className="flex flex-col items-center gap-2">
-            <div className="text-lg font-semibold text-neutral-200">
-              LLM Poker
-            </div>
-            <div className="text-sm text-neutral-400">
-              {selectedCount} / 6 seats configured
-            </div>
-            {selectedCount === 6 && (
-              <div className="text-xs text-green-400">Ready to start</div>
-            )}
           </div>
         </div>
       </div>
