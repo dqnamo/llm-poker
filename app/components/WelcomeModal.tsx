@@ -2,17 +2,8 @@
 
 import { useState } from "react";
 import {
-  X,
-  DiamondsFourIcon,
-  GithubLogoIcon,
-  DiscordLogoIcon,
-  Spade,
-  Heart,
-  Club,
-  Diamond,
   ArrowRight,
   Check,
-  Key,
   ArrowRightIcon,
   PlugsConnectedIcon,
   HeadCircuitIcon,
