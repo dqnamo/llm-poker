@@ -1,10 +1,33 @@
 // AI player decision-making logic
 
-import { generateText, tool } from 'ai';
+import { generateText, tool, LanguageModelV1 } from 'ai';
 import { z } from 'zod';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createGateway } from '@ai-sdk/gateway';
 import { ActionResult } from './types';
 import { GAME_CONFIG } from './constants';
+
+// Provider types
+export type AIProvider = 'openrouter' | 'vercel-ai-gateway';
+
+/**
+ * Create a model instance based on the provider type
+ */
+function createModelInstance(provider: AIProvider, modelId: string, apiKey: string): LanguageModelV1 {
+  if (provider === 'vercel-ai-gateway') {
+    const gateway = createGateway({
+      apiKey: apiKey,
+    });
+    // The gateway returns a LanguageModelV1 compatible model
+    return gateway(modelId) as unknown as LanguageModelV1;
+  } else {
+    // Default to OpenRouter
+    const openrouter = createOpenRouter({
+      apiKey: apiKey || process.env.OPENROUTER_API_KEY || "",
+    });
+    return openrouter.chat(modelId);
+  }
+}
 
 /**
  * Generate an AI player's action based on the current game state
@@ -21,7 +44,8 @@ export async function generateAction({
   model,
   position,
   notes,
-  apiKey
+  apiKey,
+  provider = 'openrouter'
 }: {
   playerId: string;
   cards: string[];
@@ -33,6 +57,7 @@ export async function generateAction({
   position: string;
   notes?: string;
   apiKey?: string;
+  provider?: AIProvider;
 }): Promise<ActionResult[]> {
   
   // Define available tools based on the current bet
@@ -75,13 +100,11 @@ export async function generateAction({
   };
 
   try {
-    // Create OpenRouter client with provided API key or fallback to environment
-    const openrouter = createOpenRouter({
-      apiKey: apiKey || process.env.OPENROUTER_API_KEY || "",
-    });
+    // Create model instance based on provider
+    const modelInstance = createModelInstance(provider, model, apiKey || "");
 
     const { toolCalls } = await generateText({
-      model: openrouter.chat(model),
+      model: modelInstance,
       prompt: buildPokerPrompt({
         playerId,
         cards,
@@ -283,7 +306,8 @@ export async function synthesizeRoundObservations({
   finalPot,
   winners,
   playerActions,
-  apiKey
+  apiKey,
+  provider = 'openrouter'
 }: {
   playerId: string;
   model: string;
@@ -295,6 +319,7 @@ export async function synthesizeRoundObservations({
   winners: { playerId: string; amount: number }[];
   playerActions: { playerId: string; action: string; reasoning: string }[];
   apiKey?: string;
+  provider?: AIProvider;
 }): Promise<string> {
   const prompt = `
 You are a poker player who just finished a round of Texas Hold'em.
@@ -327,13 +352,11 @@ Keep your notes concise and actionable. Update your existing notes with new insi
 Respond with ONLY the updated notes text (no explanations or meta-commentary).`;
 
   try {
-    // Create OpenRouter client with provided API key or fallback to environment
-    const openrouter = createOpenRouter({
-      apiKey: apiKey || process.env.OPENROUTER_API_KEY || "",
-    });
+    // Create model instance based on provider
+    const modelInstance = createModelInstance(provider, model, apiKey || "");
 
     const { text } = await generateText({
-      model: openrouter.chat(model),
+      model: modelInstance,
       prompt,
       maxTokens: 500,
       temperature: 0.7,

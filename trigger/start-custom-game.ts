@@ -9,13 +9,21 @@
 import { logger, task, wait } from "@trigger.dev/sdk/v3";
 import { GAME_CONFIG, createDeck } from '../engine/constants';
 import { Player } from '../engine/types';
+import { AIProvider } from '../engine/ai-player';
 import { 
   initializeCustomGame, 
   resetBustedPlayers, 
   updateGameState 
 } from '../engine/game-setup';
 import { performRound } from '../engine/round-manager';
-import { shuffle } from '../engine/utils';
+import { shuffle, getNextButtonPosition, getNextNonEmptySeat } from '../engine/utils';
+
+export interface PlayerConfig {
+  model: string;
+  seatNumber?: number;
+  emptySeat?: boolean;
+  humanPlayer?: boolean;
+}
 
 /**
  * Custom game task that runs a poker game with user-selected models
@@ -29,36 +37,39 @@ export const startCustomGame = task({
   maxDuration: GAME_CONFIG.MAX_DURATION,
   run: async (payload: { 
     gameId?: string;
-    models: string[];
+    players: PlayerConfig[];
     startingStack: number;
     numberOfHands: number;
-    openRouterKey: string;
+    apiKey: string;
+    provider?: AIProvider;
   }, { ctx }) => {
-    const { gameId: providedGameId, models, startingStack, numberOfHands, openRouterKey } = payload;
+    const { gameId: providedGameId, players, startingStack, numberOfHands, apiKey, provider = 'openrouter' } = payload;
 
     // Get the trigger handle ID from the context
     const triggerHandleId = ctx.run.id;
 
     logger.log("Starting custom poker game", { 
-      models,
+      players: players.map(p => ({ model: p.model, emptySeat: p.emptySeat, humanPlayer: p.humanPlayer })),
       startingStack,
       numberOfHands,
       triggerHandleId
     });
     
-    // Initialize game and players with custom models, passing the handle ID
-    const { gameId, players } = await initializeCustomGame(
-      models,
+    // Initialize game and players with custom configuration, passing the handle ID
+    const { gameId, players: gamePlayers } = await initializeCustomGame(
+      players,
       startingStack,
       numberOfHands,
       providedGameId,
       triggerHandleId // Pass the handle ID to be saved in the game record
     );
     
+    // Find the first non-empty seat to start as button
+    let buttonPosition = getNextNonEmptySeat(gamePlayers, 0, GAME_CONFIG.PLAYER_COUNT);
+    
     // Play multiple rounds
     for (let roundIndex = 0; roundIndex < numberOfHands; roundIndex++) {
-      // Calculate positions for this round
-      const buttonPosition = roundIndex % GAME_CONFIG.PLAYER_COUNT;
+      // Button position is already set, will be rotated after each round
       
       // Create fresh deck for each round
       const deck = createDeck();
@@ -73,17 +84,18 @@ export const startCustomGame = task({
       await updateGameState(gameId, buttonPosition, deck);
       
       // Reset any busted players with custom stack size
-      await resetBustedPlayers(players, startingStack);
+      await resetBustedPlayers(gamePlayers, startingStack);
       
       // Play the round with custom API key
       try {
         await performRound({
           gameId,
-          players,
+          players: gamePlayers,
           deck,
           roundNumber: roundIndex + 1,
           buttonPosition,
-          apiKey: openRouterKey
+          apiKey,
+          provider
         });
         
         logger.log(`Round ${roundIndex + 1} completed successfully`);
@@ -91,6 +103,9 @@ export const startCustomGame = task({
         logger.error(`Error in round ${roundIndex + 1}`, { error });
         // Continue to next round even if one fails
       }
+      
+      // Rotate button to next non-empty seat for next round
+      buttonPosition = getNextButtonPosition(gamePlayers, buttonPosition, GAME_CONFIG.PLAYER_COUNT);
     }
     
     logger.log("Custom game completed", { 
@@ -101,7 +116,7 @@ export const startCustomGame = task({
     return {
       gameId,
       roundsPlayed: numberOfHands,
-      finalStacks: Object.entries(players).map(([id, player]) => ({
+      finalStacks: Object.entries(gamePlayers).map(([id, player]) => ({
         playerId: id,
         model: player.model,
         finalStack: player.stack

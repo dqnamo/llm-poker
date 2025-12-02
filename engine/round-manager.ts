@@ -8,10 +8,11 @@ import { GAME_CONFIG } from './constants';
 import { db, clearActivePosition } from './game-setup';
 import { performBettingRound, createBettingRound } from './betting-round';
 import { performShowdown } from './showdown';
-import { synthesizeRoundObservations } from './ai-player';
+import { synthesizeRoundObservations, AIProvider } from './ai-player';
 import { 
   getPlayerPosition, 
   getPlayerIdAtPosition,
+  getNextNonEmptySeat,
   countActivePlayers,
   shuffle
 } from './utils';
@@ -27,7 +28,8 @@ export async function performRound({
   deck,
   roundNumber = 1,
   buttonPosition = 0,
-  apiKey
+  apiKey,
+  provider = 'openrouter'
 }: {
   gameId: string;
   players: Record<string, Player>;
@@ -35,6 +37,7 @@ export async function performRound({
   roundNumber?: number;
   buttonPosition?: number;
   apiKey?: string;
+  provider?: AIProvider;
 }) {
   logger.log(`Starting round ${roundNumber}`, { gameId, buttonPosition });
   
@@ -76,7 +79,8 @@ export async function performRound({
     buttonPosition,
     initialPot,
     pots,
-    apiKey
+    apiKey,
+    provider
   );
   
   // Clear active position
@@ -90,7 +94,8 @@ export async function performRound({
     hands,
     context,
     deck.slice(-5), // Get the community cards (last 5 cards dealt)
-    apiKey
+    apiKey,
+    provider
   );
   
   return { roundId, hands, context };
@@ -170,9 +175,20 @@ async function postBlindsAfterDeal(
   context: string[]
 ): Promise<number> {
   
-  // Calculate positions
-  const smallBlindPosition = getPlayerPosition(buttonPosition, 1, GAME_CONFIG.PLAYER_COUNT);
-  const bigBlindPosition = getPlayerPosition(buttonPosition, 2, GAME_CONFIG.PLAYER_COUNT);
+  // Find the next non-empty seats for blinds
+  // Small blind is the first non-empty seat after the button
+  const smallBlindPosition = getNextNonEmptySeat(
+    players, 
+    (buttonPosition + 1) % GAME_CONFIG.PLAYER_COUNT, 
+    GAME_CONFIG.PLAYER_COUNT
+  );
+  
+  // Big blind is the first non-empty seat after the small blind
+  const bigBlindPosition = getNextNonEmptySeat(
+    players,
+    (smallBlindPosition + 1) % GAME_CONFIG.PLAYER_COUNT,
+    GAME_CONFIG.PLAYER_COUNT
+  );
   
   const smallBlindPlayerId = getPlayerIdAtPosition(players, smallBlindPosition);
   const bigBlindPlayerId = getPlayerIdAtPosition(players, bigBlindPosition);
@@ -180,41 +196,46 @@ async function postBlindsAfterDeal(
   // Create initial betting round for blinds
   const bettingRoundId = await createBettingRound(gameId, roundId, 'preflop', 0);
   
-  // Find the hands for blind players
+  // Find the hands for blind players (guaranteed to be non-empty seats)
   const smallBlindHand = Object.values(hands).find(h => h.playerId === smallBlindPlayerId);
   const bigBlindHand = Object.values(hands).find(h => h.playerId === bigBlindPlayerId);
   
-  // Post small blind
-  if (smallBlindHand) {
-    await postBlindWithHand(
-      gameId,
-      roundId,
-      bettingRoundId,
-      smallBlindPlayerId,
-      smallBlindHand.id,
-      GAME_CONFIG.SMALL_BLIND,
-      "small blind",
-      players,
-      hands,
-      context
-    );
+  if (!smallBlindHand || !bigBlindHand) {
+    logger.error("Could not find hands for blind players", { 
+      smallBlindPlayerId, 
+      bigBlindPlayerId,
+      handsCount: Object.keys(hands).length 
+    });
+    return 0;
   }
   
+  // Post small blind
+  await postBlindWithHand(
+    gameId,
+    roundId,
+    bettingRoundId,
+    smallBlindPlayerId,
+    smallBlindHand.id,
+    GAME_CONFIG.SMALL_BLIND,
+    "small blind",
+    players,
+    hands,
+    context
+  );
+  
   // Post big blind
-  if (bigBlindHand) {
-    await postBlindWithHand(
-      gameId,
-      roundId,
-      bettingRoundId,
-      bigBlindPlayerId,
-      bigBlindHand.id,
-      GAME_CONFIG.BIG_BLIND,
-      "big blind",
-      players,
-      hands,
-      context
-    );
-  }
+  await postBlindWithHand(
+    gameId,
+    roundId,
+    bettingRoundId,
+    bigBlindPlayerId,
+    bigBlindHand.id,
+    GAME_CONFIG.BIG_BLIND,
+    "big blind",
+    players,
+    hands,
+    context
+  );
   
   return GAME_CONFIG.SMALL_BLIND + GAME_CONFIG.BIG_BLIND;
 }
@@ -277,7 +298,7 @@ async function postBlindWithHand(
 }
 
 /**
- * Deal hole cards to all players
+ * Deal hole cards to all players (skipping empty seats)
  */
 async function dealHoleCards(
   gameId: string,
@@ -290,6 +311,41 @@ async function dealHoleCards(
   const playerIds = Object.keys(players);
   
   for (const playerId of playerIds) {
+    const player = players[playerId];
+    
+    // Skip empty seats - they don't get dealt cards
+    if (player.model === 'empty') {
+      logger.log("Skipping card deal for empty seat", { playerId });
+      
+      // Create a folded hand for the empty seat so they're tracked but inactive
+      const handId = id();
+      await db.transact(
+        db.tx.hands[handId].update({
+          cards: { cards: [] },
+          folded: true,
+          createdAt: DateTime.now().toISO(),
+        }).link({
+          game: gameId,
+          gameRound: roundId,
+          player: playerId
+        })
+      );
+      
+      // Create folded hand object
+      hands[handId] = {
+        id: handId,
+        playerId,
+        cards: [],
+        amount: 0,
+        folded: true,
+        acted: true, // Mark as acted so they're skipped in betting
+        stack: 0,
+        allIn: false
+      };
+      
+      continue;
+    }
+    
     const handId = id();
     const card1 = deck.pop()!;
     const card2 = deck.pop()!;
@@ -339,11 +395,32 @@ async function playAllBettingRounds(
   buttonPosition: number,
   initialPot: number,
   pots: Pot[],
-  apiKey?: string
+  apiKey?: string,
+  provider: AIProvider = 'openrouter'
 ): Promise<Pot[]> {
   
-  const preFlopStart = getPlayerPosition(buttonPosition, 3, GAME_CONFIG.PLAYER_COUNT);
-  const postFlopStart = getPlayerPosition(buttonPosition, 1, GAME_CONFIG.PLAYER_COUNT);
+  // Find small blind and big blind positions (same logic as posting blinds)
+  const smallBlindPosition = getNextNonEmptySeat(
+    players, 
+    (buttonPosition + 1) % GAME_CONFIG.PLAYER_COUNT, 
+    GAME_CONFIG.PLAYER_COUNT
+  );
+  
+  const bigBlindPosition = getNextNonEmptySeat(
+    players,
+    (smallBlindPosition + 1) % GAME_CONFIG.PLAYER_COUNT,
+    GAME_CONFIG.PLAYER_COUNT
+  );
+  
+  // Preflop starts with first non-empty seat after big blind (UTG)
+  const preFlopStart = getNextNonEmptySeat(
+    players,
+    (bigBlindPosition + 1) % GAME_CONFIG.PLAYER_COUNT,
+    GAME_CONFIG.PLAYER_COUNT
+  );
+  
+  // Post-flop starts with small blind (first non-empty seat after button)
+  const postFlopStart = smallBlindPosition;
   
   // Track cumulative pot across all betting rounds
   let cumulativePot = 0;
@@ -362,7 +439,8 @@ async function playAllBettingRounds(
     pots,
     buttonPosition,
     apiKey,
-    cumulativePot
+    cumulativePot,
+    provider
   );
   
   cumulativePot += preflopResult.pot;
@@ -390,7 +468,8 @@ async function playAllBettingRounds(
     preflopResult.pots || pots,
     buttonPosition,
     apiKey,
-    cumulativePot
+    cumulativePot,
+    provider
   );
   
   cumulativePot += flopResult.pot;
@@ -419,7 +498,8 @@ async function playAllBettingRounds(
     flopResult.pots || pots,
     buttonPosition,
     apiKey,
-    cumulativePot
+    cumulativePot,
+    provider
   );
   
   cumulativePot += turnResult.pot;
@@ -448,7 +528,8 @@ async function playAllBettingRounds(
     turnResult.pots || pots,
     buttonPosition,
     apiKey,
-    cumulativePot
+    cumulativePot,
+    provider
   );
   
   cumulativePot += riverResult.pot;
@@ -475,7 +556,8 @@ async function playBettingRound(
   pots: Pot[],
   buttonPosition: number,
   apiKey?: string,
-  cumulativePot: number = 0
+  cumulativePot: number = 0,
+  provider: AIProvider = 'openrouter'
 ) {
   const bettingRoundId = await createBettingRound(
     gameId,
@@ -496,7 +578,8 @@ async function playBettingRound(
     startingPlayer,
     pots,
     buttonPosition,
-    apiKey
+    apiKey,
+    provider
   });
   
   // Update round pot with cumulative total
@@ -568,7 +651,8 @@ async function synthesizePlayerObservations(
   hands: Record<string, Hand>,
   context: string[],
   communityCards: string[],
-  apiKey?: string
+  apiKey?: string,
+  provider: AIProvider = 'openrouter'
 ): Promise<void> {
   logger.log("Synthesizing player observations", { roundId });
   
@@ -612,6 +696,12 @@ async function synthesizePlayerObservations(
   // Synthesize observations for all players in parallel
   const synthesisPromises = Object.entries(players).map(async ([playerId, player]) => {
     try {
+      // Skip empty seats - they don't get observations
+      if (player.model === 'empty') {
+        logger.log("Skipping observation synthesis for empty seat", { playerId });
+        return;
+      }
+      
       // Get player's current notes
       const playerData = await db.query({
         players: {
@@ -639,7 +729,8 @@ async function synthesizePlayerObservations(
         finalPot,
         winners,
         playerActions,
-        apiKey
+        apiKey,
+        provider
       });
       
       // Update player notes in database

@@ -147,9 +147,16 @@ export async function clearActivePosition(gameId: string): Promise<void> {
   );
 }
 
+export interface PlayerConfig {
+  model: string;
+  seatNumber?: number;
+  emptySeat?: boolean;
+  humanPlayer?: boolean;
+}
+
 /**
- * Initialize a custom game with user-selected models
- * @param models - Array of model IDs selected by the user
+ * Initialize a custom game with user-configured players
+ * @param playerConfigs - Array of player configurations
  * @param initialStack - Starting stack size for each player
  * @param handsPerGame - Number of hands to play in the game
  * @param providedGameId - Optional game ID to use instead of generating one
@@ -157,7 +164,7 @@ export async function clearActivePosition(gameId: string): Promise<void> {
  * @returns Game ID and initial game state
  */
 export async function initializeCustomGame(
-  models: string[],
+  playerConfigs: PlayerConfig[],
   initialStack: number,
   handsPerGame: number,
   providedGameId?: string,
@@ -185,21 +192,82 @@ export async function initializeCustomGame(
 
   logger.log("Custom game created", { gameId, triggerHandleId });
 
-  // Initialize players with custom models
+  // Initialize players with custom configurations
   const players: Record<string, Player> = {};
 
-  for (let i = 0; i < models.length; i++) {
+  for (let i = 0; i < playerConfigs.length; i++) {
     const playerId = id();
-    const model = models[i];
-    const modelName = model.split('/').pop() || model;
+    const config = playerConfigs[i];
+    const seatNumber = config.seatNumber ?? i;
+
+    // Handle empty seats
+    if (config.emptySeat) {
+      await db.transact(
+        db.tx.players[playerId]
+          .update({
+            name: `Empty Seat ${seatNumber + 1}`,
+            stack: 0,
+            status: "folded",
+            model: "empty",
+            seatNumber: seatNumber,
+            emptySeat: true,
+            createdAt: DateTime.now().toISO(),
+          })
+          .link({ game: gameId })
+      );
+
+      players[playerId] = {
+        id: playerId,
+        cards: [],
+        stack: 0,
+        model: "empty",
+      };
+
+      logger.log("Empty seat created", { playerId, seatNumber });
+      continue;
+    }
+
+    // Handle human players
+    if (config.humanPlayer) {
+      await db.transact(
+        db.tx.players[playerId]
+          .update({
+            name: `Human Player ${seatNumber + 1}`,
+            stack: initialStack,
+            status: "active",
+            model: "human",
+            seatNumber: seatNumber,
+            humanPlayer: true,
+            createdAt: DateTime.now().toISO(),
+          })
+          .link({ game: gameId })
+      );
+
+      players[playerId] = {
+        id: playerId,
+        cards: [],
+        stack: initialStack,
+        model: "human",
+      };
+
+      logger.log("Human player created", { playerId, seatNumber });
+      continue;
+    }
+
+    // Handle AI players
+    const model = config.model;
+    const modelName = OPENROUTER_MODELS.find(m => m.id === model)?.name || 
+                     model.split('/').pop() || 
+                     model;
 
     await db.transact(
       db.tx.players[playerId]
         .update({
-          name: OPENROUTER_MODELS.find(m => m.id === model)?.name || modelName,
+          name: modelName,
           stack: initialStack,
           status: "active",
           model: model,
+          seatNumber: seatNumber,
           createdAt: DateTime.now().toISO(),
         })
         .link({ game: gameId })
@@ -212,7 +280,7 @@ export async function initializeCustomGame(
       model: model,
     };
 
-    logger.log("Custom player created", { playerId, model });
+    logger.log("AI player created", { playerId, model, seatNumber });
   }
 
   return { gameId, players };

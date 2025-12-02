@@ -13,7 +13,7 @@ import {
   updateGameState 
 } from '../engine/game-setup';
 import { performRound } from '../engine/round-manager';
-import { shuffle } from '../engine/utils';
+import { shuffle, getNextButtonPosition, getNextNonEmptySeat } from '../engine/utils';
 
 /**
  * Main game task that runs a complete poker game
@@ -45,10 +45,12 @@ export const startGame = task({
     // Initialize game and players with custom values, passing the handle ID
     const { gameId, players } = await initializeGame(handsPerGame, initialStack, triggerHandleId);
     
+    // Find the first non-empty seat to start as button
+    let buttonPosition = getNextNonEmptySeat(players, 0, GAME_CONFIG.PLAYER_COUNT);
+    
     // Play multiple rounds
     for (let roundIndex = 0; roundIndex < handsPerGame; roundIndex++) {
-      // Calculate positions for this round
-      const buttonPosition = roundIndex % GAME_CONFIG.PLAYER_COUNT;
+      // Button position is already set, will be rotated after each round
       
       // Create fresh deck for each round
       const deck = createDeck();
@@ -80,6 +82,9 @@ export const startGame = task({
         logger.error(`Error in round ${roundIndex + 1}`, { error });
         // Continue to next round even if one fails
       }
+      
+      // Rotate button to next non-empty seat for next round
+      buttonPosition = getNextButtonPosition(players, buttonPosition, GAME_CONFIG.PLAYER_COUNT);
     }
     
     logger.log("Game completed", { 

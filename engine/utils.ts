@@ -35,6 +35,52 @@ export function getPlayerIdAtPosition(players: Record<string, Player>, position:
 }
 
 /**
+ * Find the next non-empty seat starting from a position
+ * @param players - Record of players
+ * @param startPosition - Starting position
+ * @param playerCount - Total number of seats
+ * @returns Position of the next non-empty seat
+ */
+export function getNextNonEmptySeat(
+  players: Record<string, Player>, 
+  startPosition: number, 
+  playerCount: number
+): number {
+  const playerArray = Object.values(players);
+  let position = startPosition;
+  let attempts = 0;
+  
+  // Search for next non-empty seat (max attempts = playerCount to avoid infinite loop)
+  while (attempts < playerCount) {
+    const player = playerArray[position];
+    if (player && player.model !== 'empty') {
+      return position;
+    }
+    position = (position + 1) % playerCount;
+    attempts++;
+  }
+  
+  // If all seats are empty (shouldn't happen), return start position
+  return startPosition;
+}
+
+/**
+ * Get the next non-empty seat button position (for rotating button)
+ * @param players - Record of players
+ * @param currentButton - Current button position
+ * @param playerCount - Total number of seats
+ * @returns Next button position that is not an empty seat
+ */
+export function getNextButtonPosition(
+  players: Record<string, Player>,
+  currentButton: number,
+  playerCount: number
+): number {
+  const nextPosition = (currentButton + 1) % playerCount;
+  return getNextNonEmptySeat(players, nextPosition, playerCount);
+}
+
+/**
  * Check if betting round is complete
  * All active players must have acted and bet the same amount (or be all-in)
  * @param hands - Current hands in play
