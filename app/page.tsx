@@ -130,6 +130,7 @@ export default function Home() {
     apiKey.trim() !== "";
 
   const startGame = async () => {
+    console.log("[startGame] Function called", { canStartGame });
     if (!canStartGame) return;
 
     // Validation - count filled seats (not empty)
@@ -158,6 +159,7 @@ export default function Home() {
       return;
     }
 
+    console.log("[startGame] Validation passed, setting loading state");
     setIsStartingGame(true);
     setError(null);
 
@@ -191,6 +193,13 @@ export default function Home() {
         };
       });
 
+      console.log("[startGame] Making fetch request to /api/run-simulation", {
+        players,
+        startingStack,
+        numberOfHands,
+        provider,
+      });
+
       const response = await fetch("/api/run-simulation", {
         method: "POST",
         headers: {
@@ -205,15 +214,23 @@ export default function Home() {
         }),
       });
 
+      console.log("[startGame] Fetch response received", {
+        status: response.status,
+        ok: response.ok,
+      });
+
       const data = await response.json();
+      console.log("[startGame] Response data", data);
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to start simulation");
       }
 
+      console.log("[startGame] Navigating to game page", data.simulationId);
       // Navigate to the game page
       router.push(`/game/${data.simulationId}`);
     } catch (err) {
+      console.error("[startGame] Error caught", err);
       setError(err instanceof Error ? err.message : "An error occurred");
       setIsStartingGame(false);
     }
