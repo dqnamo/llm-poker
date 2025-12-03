@@ -4,6 +4,9 @@ import { id, init } from '@instantdb/admin';
 import { DateTime } from "luxon";
 import type { AIProvider } from '@/engine/ai-player';
 
+// Force dynamic to prevent build-time execution of crypto-dependent code
+export const dynamic = 'force-dynamic';
+
 export interface PlayerConfig {
   model: string;
   seatNumber?: number;
