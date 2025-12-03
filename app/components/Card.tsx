@@ -26,7 +26,6 @@ const Card = ({ value, className = "", faceDown = false }: CardProps) => {
 
   const isRed = suit === 'h' || suit === 'd';
   const textColor = isRed ? 'text-neutral-200' : 'text-neutral-200';
-  const borderColor = isRed ? 'border-red-500' : 'border-neutral-300';
   
   return (
     <motion.div 
@@ -34,23 +33,23 @@ const Card = ({ value, className = "", faceDown = false }: CardProps) => {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.2 }}
-      className={`relative border border-neutral-900 bg-neutral-950 flex items-center justify-center ${className}`}
+      className={`relative bg-white rounded-md flex items-center justify-center shadow-sm ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
 
-      <CornerBorders borderColor={borderColor} />
+      {/* <CornerBorders borderColor={borderColor} /> */}
 
       {(!faceDown || isHovered) ? (
         // Face up card
-        <div className={`flex flex-row gap-1 items-center justify-center w-full h-full ${textColor}`}>
-          <span className="text-xs sm:text-sm font-bold">{rankText}</span>
+        <div className={`flex flex-col gap-0.5 2xl:gap-1 items-center justify-center w-full h-full ${textColor}`}>
+          <span className="text-[10px] sm:text-xs 2xl:text-base font-bold font-sans text-neutral-900">{rankText}</span>
           {/* <span className="text-xs sm:text-sm font-bold">{suit}</span> */}
 
-          {suit === 'h' && <Heart className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
-          {suit === 'd' && <Diamond className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
-          {suit === 'c' && <Club className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
-          {suit === 's' && <Spade className={`w-3 h-3 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
+          {suit === 'h' && <Heart className={`w-2.5 h-2.5 sm:w-3 sm:h-3 2xl:w-4 2xl:h-4 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
+          {suit === 'd' && <Diamond className={`w-2.5 h-2.5 sm:w-3 sm:h-3 2xl:w-4 2xl:h-4 ${isRed ? 'text-red-500' : 'text-neutral-300'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
+          {suit === 'c' && <Club className={`w-2.5 h-2.5 sm:w-3 sm:h-3 2xl:w-4 2xl:h-4 ${isRed ? 'text-red-500' : 'text-neutral-900'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
+          {suit === 's' && <Spade className={`w-2.5 h-2.5 sm:w-3 sm:h-3 2xl:w-4 2xl:h-4 ${isRed ? 'text-red-500' : 'text-neutral-900'}`} weight={`${isRed ? 'fill' : 'fill'}`} />}
         </div>
       ) : (
         // Face down card
@@ -62,15 +61,6 @@ const Card = ({ value, className = "", faceDown = false }: CardProps) => {
   );
 };
 
-const CornerBorders = ({ borderColor }: { borderColor: string }) => {
-  return (
-    <>
-      <div className={`border-r-1 border-t-1 ${borderColor} h-1 w-1 absolute -top-px -right-px`}/>
-      <div className={`border-l-1 border-b-1 ${borderColor} h-1 w-1 absolute -bottom-px -left-px`}/>
-      <div className={`border-l-1 border-t-1 ${borderColor} h-1 w-1 absolute -top-px -left-px`}/>
-      <div className={`border-r-1 border-b-1 ${borderColor} h-1 w-1 absolute -bottom-px -right-px`}/>
-    </>
-  );
-};
+
 
 export default Card; 

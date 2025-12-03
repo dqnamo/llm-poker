@@ -11,7 +11,7 @@ import {
   BettingRoundType 
 } from './types';
 import { db } from './game-setup';
-import { generateAction } from './ai-player';
+import { generateAction, AIProvider } from './ai-player';
 import {
   countActivePlayers,
   getEligiblePlayers,
@@ -38,7 +38,8 @@ export async function performBettingRound({
   startingPlayer,
   pots,
   buttonPosition,
-  apiKey
+  apiKey,
+  provider = 'openrouter'
 }: {
   context: string[];
   highestBet: number;
@@ -52,6 +53,7 @@ export async function performBettingRound({
   pots: Pot[];
   buttonPosition: number;
   apiKey?: string;
+  provider?: AIProvider;
 }): Promise<BettingRoundResult> {
   
   logger.log("Starting betting round", { bettingRoundId, highestBet, pot });
@@ -62,9 +64,10 @@ export async function performBettingRound({
   // Continue until betting round is complete
   while (!isBettingRoundComplete(hands, highestBet)) {
     const currentHand = hands[handKeys[currentPlayer]];
+    const player = players[currentHand.playerId];
     
-    // Skip folded or all-in players
-    if (currentHand.folded || currentHand.allIn) {
+    // Skip folded, all-in, or empty seat players
+    if (currentHand.folded || currentHand.allIn || player.model === 'empty') {
       currentPlayer = (currentPlayer + 1) % handKeys.length;
       continue;
     }
@@ -89,7 +92,8 @@ export async function performBettingRound({
       currentPlayer,
       buttonPosition,
       handKeys.length,
-      apiKey
+      apiKey,
+      provider
     );
     
     // Process the action
@@ -145,8 +149,18 @@ async function getPlayerAction(
   currentPlayer: number,
   buttonPosition: number,
   totalPlayers: number,
-  apiKey?: string
+  apiKey?: string,
+  provider: AIProvider = 'openrouter'
 ): Promise<any> {
+  // Safety check: empty seats should never reach here
+  if (player.model === 'empty') {
+    logger.warn("Empty seat player reached getPlayerAction, auto-folding", { playerId: player.id });
+    return {
+      toolName: 'fold',
+      args: { reasoning: 'Empty seat' }
+    };
+  }
+  
   // Calculate position relative to button
   const positionFromButton = (currentPlayer - buttonPosition + totalPlayers) % totalPlayers;
   
@@ -203,7 +217,8 @@ async function getPlayerAction(
     model: player.model,
     position,
     notes,
-    apiKey
+    apiKey,
+    provider
   });
   
   return toolCalls[0]; // Return first action

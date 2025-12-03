@@ -1,23 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { startCustomGame } from '@/trigger/start-custom-game';
 import { id } from '@instantdb/admin';
+import type { AIProvider } from '@/engine/ai-player';
+
+export interface PlayerConfig {
+  model: string;
+  seatNumber?: number;
+  emptySeat?: boolean;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { models, startingStack, numberOfHands, openRouterKey } = body;
+    const { players, startingStack, numberOfHands, apiKey, provider = 'openrouter' } = body as {
+      players: PlayerConfig[];
+      startingStack: number;
+      numberOfHands: number;
+      apiKey: string;
+      provider?: AIProvider;
+    };
 
     // Validate input
-    if (!models || models.length !== 6) {
+    if (!players || !Array.isArray(players) || players.length !== 6) {
       return NextResponse.json(
-        { error: 'Please select exactly 6 models' },
+        { error: 'Please provide exactly 6 player configurations' },
         { status: 400 }
       );
     }
 
-    if (!openRouterKey) {
+    // Validate each player configuration
+    for (let i = 0; i < players.length; i++) {
+      const player = players[i];
+      
+      // Empty seats don't need a model
+      if (player.emptySeat) {
+        continue;
+      }
+
+      // Non-empty seats must have a model
+      if (!player.model || typeof player.model !== 'string') {
+        return NextResponse.json(
+          { error: `Player at position ${i} must have a valid model or be marked as an empty seat` },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (!apiKey) {
       return NextResponse.json(
-        { error: 'OpenRouter API key is required' },
+        { error: 'API key is required' },
         { status: 400 }
       );
     }
@@ -42,10 +73,11 @@ export async function POST(request: NextRequest) {
     // Trigger the custom game with the pre-generated ID
     const handle = await startCustomGame.trigger({
       gameId,
-      models,
+      players,
       startingStack,
       numberOfHands,
-      openRouterKey,
+      apiKey,
+      provider,
     });
 
     // Return the game ID directly
