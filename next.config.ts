@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Prevent @instantdb/admin from being bundled at build time (crypto dependency)
+  serverExternalPackages: ["@instantdb/admin"],
   async rewrites() {
     return [
       {
