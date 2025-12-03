@@ -1,11 +1,11 @@
 // AI player decision-making logic
 
-import { generateText, tool, LanguageModelV1 } from 'ai';
+import { generateText, tool, createGateway } from 'ai';
 import { z } from 'zod';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { createGateway } from '@ai-sdk/gateway';
 import { ActionResult } from './types';
 import { GAME_CONFIG } from './constants';
+import { logger } from './logger';
 
 // Provider types
 export type AIProvider = 'openrouter' | 'vercel-ai-gateway';
@@ -13,17 +13,24 @@ export type AIProvider = 'openrouter' | 'vercel-ai-gateway';
 /**
  * Create a model instance based on the provider type
  */
-function createModelInstance(provider: AIProvider, modelId: string, apiKey: string): LanguageModelV1 {
+function createModelInstance(provider: AIProvider, modelId: string, apiKey: string) {
+  console.log('=== createModelInstance ===');
+  console.log('Provider:', provider);
+  console.log('Model ID:', modelId);
+  console.log('API Key provided:', apiKey ? `Yes (${apiKey.substring(0, 8)}...)` : 'NO - MISSING!');
+  
   if (provider === 'vercel-ai-gateway') {
     const gateway = createGateway({
       apiKey: apiKey,
     });
-    // The gateway returns a LanguageModelV1 compatible model
-    return gateway(modelId) as unknown as LanguageModelV1;
+    return gateway(modelId);
   } else {
     // Default to OpenRouter
+    const finalApiKey = apiKey || process.env.OPENROUTER_API_KEY || "";
+    console.log('Using API key for OpenRouter:', finalApiKey ? `Yes (${finalApiKey.substring(0, 8)}...)` : 'NO KEY!');
+    
     const openrouter = createOpenRouter({
-      apiKey: apiKey || process.env.OPENROUTER_API_KEY || "",
+      apiKey: finalApiKey,
     });
     return openrouter.chat(modelId);
   }
@@ -66,34 +73,34 @@ export async function generateAction({
   const toolsAvailable = bet === 0 ? {
     bet: tool({
       description: 'Bet a certain amount of money',
-      parameters: z.object({
+      inputSchema: z.object({
         amount: z.number().describe('The amount to bet'),
         reasoning: z.string().describe('The reasoning for the bet'),
       }),
     }),
     check: tool({
       description: 'Check the hand',
-      parameters: z.object({
+      inputSchema: z.object({
         reasoning: z.string().describe('The reasoning for the check'),
       }),
     }),
   } : {
     call: tool({
       description: 'Call the current bet (match what others have bet)',
-      parameters: z.object({
+      inputSchema: z.object({
         reasoning: z.string().describe('The reasoning for the call'),
       }),
     }),
     raise: tool({
       description: 'Raise the bet (bet more than the current bet)',
-      parameters: z.object({
+      inputSchema: z.object({
         raiseAmount: z.number().describe('The amount to raise BY (not the total bet)'),
         reasoning: z.string().describe('The reasoning for the raise'),
       }),
     }),
     fold: tool({
       description: 'Fold the hand',
-      parameters: z.object({
+      inputSchema: z.object({
         reasoning: z.string().describe('The reasoning for the fold'),
       }),
     }),
@@ -103,38 +110,83 @@ export async function generateAction({
     // Create model instance based on provider
     const modelInstance = createModelInstance(provider, model, apiKey || "");
 
-    const { toolCalls } = await generateText({
+    const prompt = buildPokerPrompt({
+      playerId,
+      cards,
+      bet,
+      pot,
+      playerStack,
+      context,
+      minBet: GAME_CONFIG.MIN_BET,
+      position,
+      notes
+    });
+
+    console.log('=== AI SDK generateText call ===');
+    console.log('Provider:', provider);
+    console.log('Model:', model);
+    console.log('Prompt:', prompt.substring(0, 500) + '...');
+    console.log('Tools available:', Object.keys(toolsAvailable));
+
+    const result = await generateText({
       model: modelInstance,
-      prompt: buildPokerPrompt({
-        playerId,
-        cards,
-        bet,
-        pot,
-        playerStack,
-        context,
-        minBet: GAME_CONFIG.MIN_BET,
-        position,
-        notes
-      }),
+      prompt,
       tools: toolsAvailable as any,
       toolChoice: "required",
-      maxTokens: 10000,
+      maxOutputTokens: 10000,
+    });
+
+    console.log('=== AI SDK Response ===');
+    console.log('Full result keys:', Object.keys(result));
+    console.log('toolCalls:', JSON.stringify(result.toolCalls, null, 2));
+    console.log('text:', result.text);
+    console.log('usage:', result.usage);
+    console.log('finishReason:', result.finishReason);
+    console.log('warnings:', result.warnings);
+    
+    const { toolCalls, usage, response } = result;
+
+    console.log('usage', usage);
+    console.log('response', response);
+
+    // Log the raw LLM response
+    logger.log(`🤖 LLM Response for ${playerId}`, {
+      model,
+      position,
+      cards,
+      betToCall: bet,
+      pot,
+      stack: playerStack,
+      toolCalls: toolCalls.map(tc => ({
+        action: tc.toolName,
+        input: tc.input
+      }))
     });
 
     // Validate and return the action
     return validateAction(toolCalls, bet, playerStack);
-  } catch (error) {
-    console.error(`Error generating action for ${playerId}:`, error);
+  } catch (error: any) {
+    console.error(`=== ERROR generating action for ${playerId} ===`);
+    console.error('Error name:', error?.name);
+    console.error('Error message:', error?.message);
+    console.error('Error cause:', error?.cause);
+    console.error('Full error:', error);
+    
+    // Log the stack trace
+    if (error?.stack) {
+      console.error('Stack trace:', error.stack);
+    }
+    
     // Default to checking if no bet required, otherwise fold
     if (bet === 0) {
       return [{
         toolName: "check",
-        args: { reasoning: "Error occurred while making decision. Checking." }
+        args: { reasoning: `Error occurred: ${error?.message || 'Unknown error'}. Checking.` }
       }];
     }
     return [{
       toolName: "fold",
-      args: { reasoning: "Error occurred while making decision. Folding for safety." }
+      args: { reasoning: `Error occurred: ${error?.message || 'Unknown error'}. Folding for safety.` }
     }];
   }
 }
@@ -222,14 +274,14 @@ function validateAction(
       toolName: "bet",
       args: {
         amount: callAmount,
-        reasoning: action.args.reasoning
+        reasoning: action.input.reasoning
       }
     }];
   }
   
   // Handle raise action
   if (action.toolName === "raise") {
-    const raiseBy = action.args.raiseAmount;
+    const raiseBy = action.input.raiseAmount;
     const totalBet = currentBet + raiseBy;
     
     // Can't bet more than stack
@@ -258,14 +310,14 @@ function validateAction(
       toolName: "bet",
       args: {
         amount: totalBet,
-        reasoning: action.args.reasoning
+        reasoning: action.input.reasoning
       }
     }];
   }
   
   // Validate bet action (only used when current bet is 0)
   if (action.toolName === "bet") {
-    const betAmount = action.args.amount;
+    const betAmount = action.input.amount;
     
     // Can't bet more than stack
     if (betAmount > playerStack) {
@@ -358,8 +410,15 @@ Respond with ONLY the updated notes text (no explanations or meta-commentary).`;
     const { text } = await generateText({
       model: modelInstance,
       prompt,
-      maxTokens: 500,
+      maxOutputTokens: 500,
       temperature: 0.7,
+    });
+
+    // Log the observation synthesis response
+    logger.log(`📝 Observation synthesis for ${playerId}`, {
+      model,
+      observationLength: text.trim().length,
+      observation: text.trim().substring(0, 200) + (text.trim().length > 200 ? '...' : '')
     });
 
     return text.trim();

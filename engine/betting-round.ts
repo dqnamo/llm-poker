@@ -1,6 +1,6 @@
 // Betting round logic and action processing
 
-import { logger } from "@trigger.dev/sdk/v3";
+import { logger } from './logger';
 import { id } from '@instantdb/admin';
 import { DateTime } from "luxon";
 import { 

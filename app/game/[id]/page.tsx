@@ -205,6 +205,25 @@ export default function GamePage({
     );
   }
 
+  // Game exists but no players yet - game is still starting
+  if (!data.games[0].players || data.games[0].players.length === 0) {
+    return (
+      <div className="flex flex-col h-dvh p-10 items-center justify-center bg-dark-1">
+        <div className="text-text-medium w-max p-4 flex flex-col items-center gap-4">
+          <CircleNotch size={24} className="animate-spin text-green-500" />
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-sm text-text-bright font-semibold uppercase">
+              Game Starting
+            </p>
+            <p className="text-xs text-text-dim">
+              Setting up players and preparing the table...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const game = data.games[0];
 
   return (
@@ -469,7 +488,13 @@ const Player = ({
   ) => void;
 }) => {
   if (!player) {
-    return <LoadingPlayer />;
+    return <EmptySeat />;
+  }
+
+  // Check if this is an empty seat placeholder
+  const isEmptySeat = player.name?.toLowerCase().startsWith("empty seat");
+  if (isEmptySeat) {
+    return <EmptySeat />;
   }
 
   const lastActionFolded =
@@ -655,23 +680,12 @@ const Table = ({ cards, pot }: { cards: string[]; pot: number }) => {
   );
 };
 
-const LoadingPlayer = () => {
+const EmptySeat = () => {
   return (
     <div className="bg-dark-4 p-px overflow-hidden relative h-full min-h-[180px] 2xl:min-h-[240px] flex flex-col">
-      <div className="relative bg-dark-2 flex flex-col divide-y divide-dark-5 flex-1">
-        <div className="flex flex-row items-start gap-4 2xl:gap-6 justify-between p-4 2xl:p-6 h-full">
-          <div className="flex flex-col gap-2 2xl:gap-3">
-            <div className="h-3 2xl:h-4 bg-dark-6 animate-pulse w-16 2xl:w-20"></div>
-            <div className="h-4 2xl:h-5 bg-dark-6 animate-pulse w-12 2xl:w-16"></div>
-          </div>
-          <div className="flex flex-row items-center gap-1 2xl:gap-2">
-            <div className="w-8 h-11 2xl:w-12 2xl:h-16 bg-dark-6 animate-pulse"></div>
-            <div className="w-8 h-11 2xl:w-12 2xl:h-16 bg-dark-6 animate-pulse"></div>
-          </div>
-        </div>
-        <div className="flex flex-col p-4 2xl:p-6 shrink-0 gap-2 2xl:gap-3">
-          <div className="h-3 2xl:h-4 bg-dark-6 animate-pulse w-20 2xl:w-24"></div>
-          <div className="h-3 2xl:h-4 bg-dark-6 animate-pulse w-16 2xl:w-20"></div>
+      <div className="relative bg-dark-2 flex flex-col flex-1 items-center justify-center">
+        <div className="text-xs 2xl:text-sm text-dark-6 uppercase font-medium">
+          Empty Seat
         </div>
       </div>
     </div>

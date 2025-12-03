@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { startCustomGame } from '@/trigger/start-custom-game';
-import { id } from '@instantdb/admin';
+import { Client } from "@upstash/workflow";
+import { id, init } from '@instantdb/admin';
+import { DateTime } from "luxon";
 import type { AIProvider } from '@/engine/ai-player';
 
 export interface PlayerConfig {
@@ -8,6 +9,20 @@ export interface PlayerConfig {
   seatNumber?: number;
   emptySeat?: boolean;
 }
+
+// Initialize database for creating pending game records
+const db = init({
+  appId: process.env.NEXT_PUBLIC_INSTANT_APP_ID || "",
+  adminToken: process.env.INSTANT_APP_ADMIN_TOKEN || "",
+});
+
+// Get base URL for workflow endpoints
+const getBaseUrl = () => {
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+  return process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,21 +85,49 @@ export async function POST(request: NextRequest) {
     // Generate a game ID upfront
     const gameId = id();
 
-    // Trigger the custom game with the pre-generated ID
-    const handle = await startCustomGame.trigger({
-      gameId,
-      players,
-      startingStack,
-      numberOfHands,
-      apiKey,
-      provider,
+    // Create a pending game record immediately so the game page can show "starting" state
+    // This record will be updated by the workflow when it actually starts
+    await db.transact(
+      db.tx.games[gameId].update({
+        totalRounds: numberOfHands,
+        createdAt: DateTime.now().toISO(),
+        buttonPosition: 0,
+        currentActivePosition: null,
+        deck: { cards: [] },
+        customGame: true,
+        // Note: players will be added by the workflow
+      })
+    );
+
+    // Trigger the Upstash Workflow
+    const client = new Client({ token: process.env.QSTASH_TOKEN! });
+    const baseUrl = getBaseUrl();
+    
+    const { workflowRunId } = await client.trigger({
+      url: `${baseUrl}/api/workflow/start-custom-game`,
+      body: {
+        gameId,
+        players,
+        startingStack,
+        numberOfHands,
+        apiKey,
+        provider,
+      },
+      retries: 1,
     });
+
+    // Update the game with the workflow run ID
+    await db.transact(
+      db.tx.games[gameId].update({
+        jobHandleId: workflowRunId,
+      })
+    );
 
     // Return the game ID directly
     return NextResponse.json({
       simulationId: gameId,
       message: 'Simulation started successfully',
-      triggerHandle: handle.id
+      workflowRunId
     });
 
   } catch (error) {
@@ -94,4 +137,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

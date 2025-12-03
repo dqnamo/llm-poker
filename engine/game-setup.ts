@@ -2,7 +2,7 @@
 
 import { init, id } from '@instantdb/admin';
 import { DateTime } from "luxon";
-import { logger } from "@trigger.dev/sdk/v3";
+import { logger } from './logger';
 import { Player } from './types';
 import { GAME_CONFIG, AI_MODELS, createDeck, OPENROUTER_MODELS } from './constants';
 import { shuffle } from './utils';

@@ -451,6 +451,10 @@ function PlayersTab({
   useMemo(() => {
     if (players) {
       const sortedPlayers = players
+        // Filter out empty seat placeholders
+        .filter(
+          (player) => !player.name?.toLowerCase().startsWith("empty seat")
+        )
         .map((player) => {
           const totalWinnings = player.transactions.reduce((acc, tx) => {
             return acc + (tx.credit ? tx.amount : -tx.amount);
