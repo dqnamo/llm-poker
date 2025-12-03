@@ -4,6 +4,9 @@ import { id, init } from '@instantdb/admin';
 import { DateTime } from "luxon";
 import type { AIProvider } from '@/engine/ai-player';
 
+// Force dynamic rendering - skip static analysis at build time
+export const dynamic = 'force-dynamic';
+
 export interface PlayerConfig {
   model: string;
   seatNumber?: number;
