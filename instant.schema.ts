@@ -30,8 +30,6 @@ const _schema = i.schema({
       model: i.string(),
       seatNumber: i.number().optional(),
       emptySeat: i.boolean().optional(),
-      humanPlayer: i.boolean().optional(),
-      humanPlayerSessionId: i.string().optional(),
       notes: i.string().optional(),
     }),
     gameRounds: i.entity({

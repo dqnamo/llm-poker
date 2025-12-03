@@ -7,7 +7,6 @@ export interface PlayerConfig {
   model: string;
   seatNumber?: number;
   emptySeat?: boolean;
-  humanPlayer?: boolean;
 }
 
 export async function POST(request: NextRequest) {
@@ -35,10 +34,6 @@ export async function POST(request: NextRequest) {
       
       // Empty seats don't need a model
       if (player.emptySeat) {
-        continue;
-      }
-
-      if (player.humanPlayer) {
         continue;
       }
 

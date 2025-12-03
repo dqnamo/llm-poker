@@ -43,7 +43,6 @@ interface PlayerConfig {
   model: string;
   seatNumber?: number;
   emptySeat?: boolean;
-  humanPlayer?: boolean;
 }
 
 type AIProvider = "openrouter" | "vercel-ai-gateway";
@@ -51,7 +50,6 @@ type AIProvider = "openrouter" | "vercel-ai-gateway";
 type SeatSelection =
   | { type: "model"; model: SelectedModel }
   | { type: "empty" }
-  | { type: "human" }
   | null;
 
 export default function Home() {
@@ -175,14 +173,6 @@ export default function Home() {
             model: "",
             seatNumber: index,
             emptySeat: true,
-          };
-        }
-
-        if (selection.type === "human") {
-          return {
-            model: "",
-            seatNumber: index,
-            humanPlayer: true,
           };
         }
 
@@ -417,18 +407,6 @@ const SeatSelector = ({
                     <Minus size={14} className="text-dark-10 2xl:w-5 2xl:h-5" />
                     <span className="text-xs 2xl:text-sm text-text-dim italic">
                       Empty Seat
-                    </span>
-                  </div>
-                )}
-                {selection.type === "human" && (
-                  <div className="flex items-center gap-2 2xl:gap-3">
-                    <User
-                      size={14}
-                      className="text-green-500 2xl:w-5 2xl:h-5"
-                      weight="fill"
-                    />
-                    <span className="text-xs 2xl:text-sm text-green-400 font-medium">
-                      Human Player
                     </span>
                   </div>
                 )}
@@ -834,18 +812,6 @@ const ConfigurationSidebar = ({
                             </span>
                           </>
                         )}
-                        {selection.type === "human" && (
-                          <>
-                            <User
-                              size={12}
-                              className="text-green-500 2xl:w-4 2xl:h-4"
-                              weight="fill"
-                            />
-                            <span className="text-xs 2xl:text-sm text-green-400">
-                              Human
-                            </span>
-                          </>
-                        )}
                       </div>
                     ) : (
                       <span className="text-xs 2xl:text-sm text-dark-10 italic">
@@ -969,27 +935,6 @@ const ModelSelectionModal = ({
                   </span>
                   <span className="text-xs 2xl:text-sm text-text-dim">
                     Leave this seat empty
-                  </span>
-                </div>
-              </div>
-            </button>
-
-            <button
-              onClick={() => onSelect({ type: "human" })}
-              className="w-full text-left p-4 2xl:p-5 bg-dark-3 hover:bg-dark-4 transition-colors border border-dark-6 hover:border-dark-8"
-            >
-              <div className="flex items-center gap-3 2xl:gap-4">
-                <User
-                  size={18}
-                  className="text-green-500 2xl:w-6 2xl:h-6"
-                  weight="fill"
-                />
-                <div className="flex flex-col gap-1">
-                  <span className="text-sm 2xl:text-base text-green-400 font-medium">
-                    Human Player
-                  </span>
-                  <span className="text-xs 2xl:text-sm text-text-dim">
-                    Reserve for human player
                   </span>
                 </div>
               </div>

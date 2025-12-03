@@ -151,7 +151,6 @@ export interface PlayerConfig {
   model: string;
   seatNumber?: number;
   emptySeat?: boolean;
-  humanPlayer?: boolean;
 }
 
 /**
@@ -224,33 +223,6 @@ export async function initializeCustomGame(
       };
 
       logger.log("Empty seat created", { playerId, seatNumber });
-      continue;
-    }
-
-    // Handle human players
-    if (config.humanPlayer) {
-      await db.transact(
-        db.tx.players[playerId]
-          .update({
-            name: `Human Player ${seatNumber + 1}`,
-            stack: initialStack,
-            status: "active",
-            model: "human",
-            seatNumber: seatNumber,
-            humanPlayer: true,
-            createdAt: DateTime.now().toISO(),
-          })
-          .link({ game: gameId })
-      );
-
-      players[playerId] = {
-        id: playerId,
-        cards: [],
-        stack: initialStack,
-        model: "human",
-      };
-
-      logger.log("Human player created", { playerId, seatNumber });
       continue;
     }
 

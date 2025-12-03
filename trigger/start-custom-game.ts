@@ -22,7 +22,6 @@ export interface PlayerConfig {
   model: string;
   seatNumber?: number;
   emptySeat?: boolean;
-  humanPlayer?: boolean;
 }
 
 /**
@@ -49,7 +48,7 @@ export const startCustomGame = task({
     const triggerHandleId = ctx.run.id;
 
     logger.log("Starting custom poker game", { 
-      players: players.map(p => ({ model: p.model, emptySeat: p.emptySeat, humanPlayer: p.humanPlayer })),
+      players: players.map(p => ({ model: p.model, emptySeat: p.emptySeat })),
       startingStack,
       numberOfHands,
       triggerHandleId
