@@ -10,7 +10,6 @@ import {
   X,
   Gear,
   CardsThree,
-  User,
   Robot,
   Minus,
 } from "@phosphor-icons/react";
