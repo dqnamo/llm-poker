@@ -1,0 +1,906 @@
+---
+alwaysApply: true
+---
+
+# Upstash Workflow
+
+Upstash Workflow is a serverless orchestration framework that enables durable, reliable, and performant long-running functions without infrastructure management. Built on QStash, it transforms serverless functions into resilient workflows by breaking complex logic into individual steps, each with automatic retries, state persistence, and independent execution timeouts. This step-based architecture eliminates traditional serverless limitations like function timeouts and transient failures.
+
+The framework provides delivery guarantees with at-least-once execution semantics, automatic failure recovery through a Dead Letter Queue, and real-time observability. Workflows can sleep for days or months, wait for external events, make HTTP calls lasting up to 2 hours without consuming function execution time, run steps in parallel, and handle scheduled recurring tasks. Available for Next.js, Cloudflare Workers, FastAPI, and other platforms in both TypeScript and Python.
+
+## Core Workflow Methods
+
+### Define a workflow endpoint with serve
+
+Creates a workflow endpoint that orchestrates multi-step serverless functions with automatic state management and retry logic.
+
+```typescript
+// api/workflow/route.ts
+import { serve } from "@upstash/workflow/nextjs";
+
+interface UserData {
+  userId: string;
+  email: string;
+  name: string;
+}
+
+export const { POST } = serve<UserData>(
+  async (context) => {
+    const { userId, email, name } = context.requestPayload;
+
+    const user = await context.run("register-user", async () => {
+      const newUser = await db.users.create({ userId, email, name });
+      console.log(`Registered user: ${userId}`);
+      return newUser;
+    });
+
+    await context.sleep("wait-for-3-days", 60 * 60 * 24 * 3);
+
+    const message = await context.call("generate-welcome-message", {
+      url: "https://api.openai.com/v1/chat/completions",
+      method: "POST",
+      headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+      body: {
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "Generate personalized welcome messages.",
+          },
+          { role: "user", content: `Welcome message for ${name}` },
+        ],
+      },
+      retries: 3,
+    });
+
+    await context.run("send-welcome-email", async () => {
+      await sendEmail(email, message.body.choices[0].message.content);
+    });
+
+    return { success: true, userId: user.id };
+  },
+  {
+    failureFunction: async ({ context, failStatus, failResponse }) => {
+      console.error(`Workflow ${context.workflowRunId} failed:`, failResponse);
+      await notifyAdmin(
+        `User onboarding failed for ${context.requestPayload.email}`
+      );
+      return `Failed with status ${failStatus}`;
+    },
+  }
+);
+```
+
+```python
+# main.py
+from fastapi import FastAPI
+from upstash_workflow.fastapi import Serve
+from upstash_workflow import AsyncWorkflowContext
+from typing import TypedDict
+
+app = FastAPI()
+serve = Serve(app)
+
+class UserData(TypedDict):
+    user_id: str
+    email: str
+    name: str
+
+async def failure_handler(context, fail_status, fail_response, fail_headers):
+    print(f"Workflow {context.workflow_run_id} failed: {fail_response}")
+    await notify_admin(f"Onboarding failed for {context.request_payload['email']}")
+
+@serve.post("/api/onboarding", failure_function=failure_handler)
+async def onboarding_workflow(context: AsyncWorkflowContext[UserData]) -> dict:
+    data = context.request_payload
+
+    async def _register_user():
+        user = await db.users.create(data)
+        print(f"Registered user: {data['user_id']}")
+        return user
+
+    user = await context.run("register-user", _register_user)
+
+    await context.sleep("wait-for-3-days", 60 * 60 * 24 * 3)
+
+    message = await context.call(
+        "generate-welcome-message",
+        url="https://api.openai.com/v1/chat/completions",
+        method="POST",
+        headers={"authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"},
+        body={
+            "model": "gpt-4o",
+            "messages": [
+                {"role": "system", "content": "Generate personalized welcome messages."},
+                {"role": "user", "content": f"Welcome message for {data['name']}"}
+            ]
+        },
+        retries=3
+    )
+
+    async def _send_email():
+        await send_email(data["email"], message.body["choices"][0]["message"]["content"])
+
+    await context.run("send-welcome-email", _send_email)
+
+    return {"success": True, "user_id": user["id"]}
+```
+
+### Execute workflow steps with context.run
+
+Executes a function as an independent workflow step with automatic retries and state persistence.
+
+```typescript
+import { serve } from "@upstash/workflow/nextjs";
+
+export const { POST } = serve<{ orderId: string }>(async (context) => {
+  const { orderId } = context.requestPayload;
+
+  // Serial execution
+  const inventory = await context.run("check-inventory", async () => {
+    const stock = await db.inventory.findOne({ orderId });
+    if (!stock.available) throw new Error("Out of stock");
+    return stock;
+  });
+
+  const payment = await context.run("process-payment", async () => {
+    const result = await stripe.charges.create({
+      amount: inventory.price,
+      currency: "usd",
+      source: "tok_visa",
+    });
+    return result;
+  });
+
+  // Parallel execution
+  const [emailSent, invoiceGenerated, shipmentScheduled] = await Promise.all([
+    context.run("send-confirmation-email", async () => {
+      return await sendEmail(orderId, "Order confirmed!");
+    }),
+    context.run("generate-invoice", async () => {
+      return await createInvoice(orderId, payment.id);
+    }),
+    context.run("schedule-shipment", async () => {
+      return await logistics.schedule(orderId, inventory.warehouseId);
+    }),
+  ]);
+
+  return { orderId, paymentId: payment.id, shipmentId: shipmentScheduled.id };
+});
+```
+
+### Pause execution with context.sleep and context.sleepUntil
+
+Pauses workflow execution for a specified duration or until a timestamp without consuming function execution time.
+
+```typescript
+import { serve } from "@upstash/workflow/nextjs";
+
+export const { POST } = serve<{ userId: string; subscriptionEnd: number }>(
+  async (context) => {
+    const { userId, subscriptionEnd } = context.requestPayload;
+
+    // Sleep for 7 days
+    await context.sleep("trial-period", "7d");
+
+    await context.run("send-trial-ending-reminder", async () => {
+      await sendEmail(userId, "Your trial ends in 1 day");
+    });
+
+    // Sleep until specific timestamp
+    const endDate = new Date(subscriptionEnd);
+    await context.sleepUntil("wait-until-subscription-ends", endDate);
+
+    const isActive = await context.run("check-payment-status", async () => {
+      return await db.payments.hasActive(userId);
+    });
+
+    if (!isActive) {
+      await context.run("suspend-account", async () => {
+        await db.users.update(userId, { status: "suspended" });
+        await sendEmail(userId, "Account suspended - payment required");
+      });
+    }
+  }
+);
+```
+
+### Make timeout-resistant HTTP calls with context.call
+
+Performs HTTP requests as workflow steps that can run for up to 2 hours without consuming serverless function execution time.
+
+```typescript
+import { serve } from "@upstash/workflow/nextjs";
+
+export const { POST } = serve<{ videoUrl: string }>(async (context) => {
+  const { videoUrl } = context.requestPayload;
+
+  // Long-running AI video processing (can take up to 2 hours)
+  const processed = await context.call("process-video", {
+    url: "https://api.videoprocessing.ai/v1/process",
+    method: "POST",
+    body: {
+      video_url: videoUrl,
+      operations: ["transcribe", "summarize", "extract-highlights"],
+    },
+    headers: {
+      authorization: `Bearer ${process.env.VIDEO_API_KEY}`,
+      "content-type": "application/json",
+    },
+    retries: 3,
+    retryDelay: "pow(2, retried) * 1000",
+    timeout: 7200,
+    flowControl: {
+      key: "video-processing",
+      rate: 10,
+      period: "60s",
+    },
+  });
+
+  if (processed.status !== 200) {
+    throw new Error(`Processing failed: ${processed.body.error}`);
+  }
+
+  const { transcript, summary, highlights } = processed.body;
+
+  await context.run("store-results", async () => {
+    await db.videos.update(videoUrl, {
+      transcript,
+      summary,
+      highlights,
+      processed: true,
+    });
+  });
+
+  return {
+    videoUrl,
+    transcriptLength: transcript.length,
+    highlightsCount: highlights.length,
+  };
+});
+```
+
+### Integrate AI APIs with context.api
+
+Calls AI services with type-safe methods that don't count towards function execution time.
+
+```typescript
+import { serve } from "@upstash/workflow/nextjs";
+
+export const { POST } = serve<{ topic: string; userEmail: string }>(
+  async (context) => {
+    const { topic, userEmail } = context.requestPayload;
+
+    // OpenAI integration
+    const { body: openaiResponse } = await context.api.openai.call(
+      "generate-content",
+      {
+        token: process.env.OPENAI_API_KEY!,
+        operation: "chat.completions.create",
+        body: {
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You write engaging newsletter content.",
+            },
+            { role: "user", content: `Write a newsletter about: ${topic}` },
+          ],
+          temperature: 0.7,
+        },
+      }
+    );
+
+    const newsletterContent = openaiResponse.choices[0].message.content;
+
+    // Anthropic integration for content moderation
+    const { body: moderationResponse } = await context.api.anthropic.call(
+      "moderate-content",
+      {
+        token: process.env.ANTHROPIC_API_KEY!,
+        operation: "messages.create",
+        body: {
+          model: "claude-3-5-sonnet-20241022",
+          max_tokens: 1024,
+          messages: [
+            {
+              role: "user",
+              content: `Review this content for appropriateness: ${newsletterContent}`,
+            },
+          ],
+        },
+      }
+    );
+
+    const isApproved =
+      moderationResponse.content[0].text.includes("appropriate");
+
+    if (isApproved) {
+      // Resend integration for email delivery
+      const { body: emailResponse } = await context.api.resend.call(
+        "send-newsletter",
+        {
+          token: process.env.RESEND_API_KEY!,
+          body: {
+            from: "Newsletter <newsletter@company.com>",
+            to: [userEmail],
+            subject: `Latest insights on ${topic}`,
+            html: `<div>${newsletterContent}</div>`,
+          },
+        }
+      );
+
+      return { sent: true, emailId: emailResponse.id };
+    }
+
+    return { sent: false, reason: "Content moderation failed" };
+  }
+);
+```
+
+## Event-Driven Workflows
+
+### Wait for external events with context.waitForEvent
+
+Pauses workflow execution until an external event occurs or timeout is reached.
+
+```typescript
+import { serve } from "@upstash/workflow/nextjs";
+
+export const { POST } = serve<{ userId: string; orderId: string }>(
+  async (context) => {
+    const { userId, orderId } = context.requestPayload;
+
+    await context.run("initiate-payment", async () => {
+      await paymentGateway.createIntent(orderId);
+      await sendEmail(userId, "Please confirm your payment");
+    });
+
+    // Wait up to 24 hours for payment confirmation
+    const { eventData, timeout } = await context.waitForEvent(
+      "wait-for-payment-confirmation",
+      `payment-${orderId}`,
+      { timeout: "24h" }
+    );
+
+    if (timeout) {
+      await context.run("handle-timeout", async () => {
+        await db.orders.update(orderId, { status: "payment_timeout" });
+        await sendEmail(userId, "Payment timeout - order cancelled");
+      });
+      return { success: false, reason: "timeout" };
+    }
+
+    await context.run("process-confirmed-payment", async () => {
+      await db.orders.update(orderId, {
+        status: "paid",
+        transactionId: eventData.transactionId,
+      });
+      await sendEmail(userId, "Payment confirmed - order processing");
+    });
+
+    return { success: true, transactionId: eventData.transactionId };
+  }
+);
+```
+
+### Notify waiting workflows with context.notify and client.notify
+
+Sends events to resume workflows waiting for specific event IDs.
+
+```typescript
+// Workflow that notifies other workflows
+import { serve } from "@upstash/workflow/nextjs";
+
+export const { POST } = serve<{ orderId: string; status: string }>(
+  async (context) => {
+    const { orderId, status } = context.requestPayload;
+
+    const { notifyResponse } = await context.notify(
+      "notify-payment-received",
+      `payment-${orderId}`,
+      { transactionId: "txn_12345", amount: 99.99, timestamp: Date.now() }
+    );
+
+    console.log(`Notified ${notifyResponse.length} waiting workflows`);
+    notifyResponse.forEach((response) => {
+      console.log(
+        `Workflow ${response.workflowRunId} notified: ${response.messageId}`
+      );
+    });
+  }
+);
+```
+
+```typescript
+// External service notifying via client
+import { Client } from "@upstash/workflow";
+
+const client = new Client({ token: process.env.QSTASH_TOKEN! });
+
+// Notify all workflows waiting for this event
+await client.notify({
+  eventId: "payment-ord_abc123",
+  eventData: {
+    transactionId: "txn_xyz789",
+    amount: 99.99,
+    paymentMethod: "credit_card",
+    timestamp: Date.now(),
+  },
+});
+
+// Get workflows waiting for an event
+const waiters = await client.getWaiters({ eventId: "payment-ord_abc123" });
+console.log(`${waiters.length} workflows waiting for payment confirmation`);
+```
+
+## Workflow Client Operations
+
+### Trigger workflows programmatically
+
+Starts workflow runs with custom configuration and retrieves run IDs for tracking.
+
+```typescript
+import { Client } from "@upstash/workflow";
+
+const client = new Client({ token: process.env.QSTASH_TOKEN! });
+
+// Trigger single workflow
+const { workflowRunId } = await client.trigger({
+  url: "https://myapp.com/api/workflow/onboarding",
+  body: {
+    userId: "user_123",
+    email: "user@example.com",
+    name: "John Doe",
+  },
+  headers: { "x-api-key": "secret" },
+  workflowRunId: "onboarding-user-123",
+  retries: 3,
+  retryDelay: "1000 * (1 + retried)",
+  delay: "10s",
+  failureUrl: "https://myapp.com/api/workflow-failure",
+  flowControl: {
+    key: "user-onboarding",
+    rate: 100,
+    period: "60s",
+    parallelism: 10,
+  },
+});
+
+console.log(`Started workflow: ${workflowRunId}`);
+
+// Trigger multiple workflows in batch
+const results = await client.trigger([
+  {
+    url: "https://myapp.com/api/workflow/notification",
+    body: { userId: "user_1", message: "Hello" },
+  },
+  {
+    url: "https://myapp.com/api/workflow/notification",
+    body: { userId: "user_2", message: "Hello" },
+  },
+]);
+
+results.forEach((result) =>
+  console.log(`Workflow started: ${result.workflowRunId}`)
+);
+```
+
+```bash
+# Trigger via REST API
+curl -X POST https://myapp.com/api/workflow/process \
+  -H "Content-Type: application/json" \
+  -d '{"orderId": "ord_123", "amount": 99.99}'
+```
+
+### Monitor and retrieve workflow logs
+
+Queries workflow execution history with filtering and pagination for observability.
+
+```typescript
+import { Client } from "@upstash/workflow";
+
+const client = new Client({ token: process.env.QSTASH_TOKEN! });
+
+// Get specific workflow run
+const { runs, cursor } = await client.logs({
+  workflowRunId: "wfr_onboarding-user-123",
+});
+
+const run = runs[0];
+console.log(`Workflow: ${run.workflowRunId}`);
+console.log(`State: ${run.workflowState}`);
+console.log(`URL: ${run.workflowUrl}`);
+console.log(`Started: ${new Date(run.workflowRunCreatedAt)}`);
+
+if (run.workflowRunCompletedAt) {
+  console.log(`Completed: ${new Date(run.workflowRunCompletedAt)}`);
+}
+
+if (run.workflowRunResponse) {
+  console.log(`Response:`, run.workflowRunResponse);
+}
+
+// List all failed workflows for debugging
+const { runs: failedRuns } = await client.logs({
+  state: "RUN_FAILED",
+  count: 50,
+});
+
+failedRuns.forEach((run) => {
+  console.log(`Failed: ${run.workflowRunId} at ${run.workflowUrl}`);
+  if (run.dlqId) {
+    console.log(`  DLQ ID: ${run.dlqId}`);
+  }
+  run.steps.forEach((step) => {
+    if (step.type === "single" && step.steps[0].state === "STEP_FAILED") {
+      console.log(`  Failed step: ${step.steps[0].messageId}`);
+    }
+  });
+});
+
+// Search workflows by URL
+const { runs: onboardingRuns } = await client.logs({
+  workflowUrl: "https://myapp.com/api/workflow/onboarding",
+  count: 100,
+});
+
+// Paginate through results
+let allRuns = [];
+let nextCursor = undefined;
+
+do {
+  const response = await client.logs({
+    state: "RUN_SUCCESS",
+    count: 100,
+    cursor: nextCursor,
+  });
+  allRuns.push(...response.runs);
+  nextCursor = response.cursor;
+} while (nextCursor);
+
+console.log(`Total successful runs: ${allRuns.length}`);
+```
+
+### Cancel running workflows
+
+Stops active workflow runs to prevent further execution and resource consumption.
+
+```typescript
+import { Client } from "@upstash/workflow";
+
+const client = new Client({ token: process.env.QSTASH_TOKEN! });
+
+// Cancel single workflow
+await client.cancel({ ids: "wfr_onboarding-user-123" });
+
+// Cancel multiple workflows
+await client.cancel({
+  ids: ["wfr_batch-1", "wfr_batch-2", "wfr_batch-3"],
+});
+
+// Cancel all workflows for a specific URL
+await client.cancel({
+  urlStartingWith: "https://myapp.com/api/workflow/batch-processing",
+});
+
+// Cancel all pending and running workflows (use with caution)
+await client.cancel({ all: true });
+```
+
+```bash
+# Cancel via REST API
+curl -X DELETE https://qstash.upstash.io/v2/workflows/runs/wfr_abc123 \
+  -H "Authorization: Bearer <QSTASH_TOKEN>"
+```
+
+### Handle failed workflows with Dead Letter Queue
+
+Manages failed workflow runs with options to resume, restart, or retry failure callbacks.
+
+```typescript
+import { Client } from "@upstash/workflow";
+
+const client = new Client({ token: process.env.QSTASH_TOKEN! });
+
+// List failed workflows
+const { messages, cursor } = await client.dlq.list({
+  filter: {
+    fromDate: Date.now() - 86400000, // Last 24 hours
+    url: "https://myapp.com/api/workflow/payment",
+    responseStatus: 500,
+  },
+  count: 50,
+});
+
+messages.forEach((msg) => {
+  console.log(`Failed: ${msg.workflowRunId}`);
+  console.log(`  DLQ ID: ${msg.dlqId}`);
+  console.log(`  Error: ${msg.responseBody}`);
+  console.log(`  Failed at: ${new Date(msg.timestamp)}`);
+});
+
+// Resume workflow from where it failed (preserves successful steps)
+const resumeResponse = await client.dlq.resume({
+  dlqId: messages[0].dlqId,
+  retries: 5,
+  flowControl: {
+    key: "payment-retry",
+    rate: 5,
+    period: "60s",
+  },
+});
+
+console.log(`Resumed: ${resumeResponse.messageId}`);
+
+// Restart workflow from beginning (discards all step results)
+const restartResponse = await client.dlq.restart({
+  dlqId: messages[1].dlqId,
+  retries: 3,
+});
+
+// Bulk resume multiple failed workflows
+const bulkResumeResponses = await client.dlq.resume({
+  dlqId: ["dlq_123", "dlq_456", "dlq_789"],
+  retries: 3,
+});
+
+bulkResumeResponses.forEach((response) => {
+  console.log(`Bulk resumed: ${response.messageId}`);
+});
+
+// Retry failed failure function callback
+await client.dlq.retryFailureFunction({
+  dlqId: "dlq_callback_failed_123",
+});
+
+// Paginate through DLQ
+let allDlqMessages = [];
+let dlqCursor = undefined;
+
+do {
+  const response = await client.dlq.list({
+    cursor: dlqCursor,
+    count: 100,
+  });
+  allDlqMessages.push(...response.messages);
+  dlqCursor = response.cursor;
+} while (dlqCursor);
+
+console.log(`Total DLQ messages: ${allDlqMessages.length}`);
+```
+
+## Scheduled and Recurring Workflows
+
+### Schedule workflows with cron expressions
+
+Creates recurring workflow runs at specified intervals using QStash schedules.
+
+```typescript
+import { Client } from "@upstash/qstash";
+
+const client = new Client({ token: process.env.QSTASH_TOKEN! });
+
+// Schedule daily backup at 2:00 AM
+await client.schedules.create({
+  scheduleId: "daily-backup",
+  destination: "https://myapp.com/api/workflow/backup",
+  cron: "0 2 * * *",
+  body: { backupType: "full", retention: 30 },
+});
+
+// Schedule weekly report every Monday at 9:00 AM
+await client.schedules.create({
+  scheduleId: "weekly-report",
+  destination: "https://myapp.com/api/workflow/generate-report",
+  cron: "0 9 * * 1",
+  body: { reportType: "weekly_summary" },
+});
+
+// Per-user schedule: weekly summary starting 7 days after signup
+const user = await signUpUser({ email: "user@example.com", name: "Jane" });
+const firstSummaryDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+const userCron = `${firstSummaryDate.getMinutes()} ${firstSummaryDate.getHours()} * * ${firstSummaryDate.getDay()}`;
+
+await client.schedules.create({
+  scheduleId: `user-summary-${user.email}`,
+  destination: "https://myapp.com/api/workflow/user-summary",
+  body: { userId: user.id, email: user.email },
+  cron: userCron,
+});
+```
+
+```typescript
+// Scheduled workflow endpoint
+import { serve } from "@upstash/workflow/nextjs";
+
+export const { POST } = serve<{ userId: string }>(
+  async (context) => {
+    const { userId } = context.requestPayload;
+
+    const data = await context.run("fetch-user-data", async () => {
+      return await db.getUserActivity(userId, { days: 7 });
+    });
+
+    const summary = await context.run("generate-summary", async () => {
+      return await generateWeeklySummary(data);
+    });
+
+    await context.run("send-summary-email", async () => {
+      await sendEmail(data.userEmail, "Your Weekly Summary", summary);
+    });
+  },
+  {
+    failureFunction: async ({ context, failResponse }) => {
+      await alertOps(
+        `Weekly summary failed for user ${context.requestPayload.userId}`
+      );
+    },
+  }
+);
+```
+
+```python
+# Schedule in Python
+from qstash import AsyncQStash
+from datetime import datetime, timedelta
+
+client = AsyncQStash(os.environ["QSTASH_TOKEN"])
+
+# Schedule daily data sync at midnight
+await client.schedule.create_json(
+    schedule_id="daily-sync",
+    destination="https://myapp.com/api/workflow/sync",
+    cron="0 0 * * *",
+    body={"sync_type": "incremental"}
+)
+
+# Per-user schedule
+user = await register_user(email="user@example.com")
+first_check_date = datetime.now() + timedelta(days=7)
+user_cron = f"{first_check_date.minute} {first_check_date.hour} * * {first_check_date.day}"
+
+await client.schedule.create_json(
+    schedule_id=f"user-check-{user['email']}",
+    destination="https://myapp.com/api/workflow/user-check",
+    body={"user_id": user["id"]},
+    cron=user_cron
+)
+```
+
+## Advanced Patterns
+
+### Long-running customer lifecycle workflow
+
+Demonstrates infinite loops, state-based branching, and long delays for user engagement.
+
+```typescript
+import { serve } from "@upstash/workflow/nextjs";
+
+type UserState = "non-active" | "active" | "premium";
+
+export const { POST } = serve<{ email: string; userId: string }>(
+  async (context) => {
+    const { email, userId } = context.requestPayload;
+
+    await context.run("send-welcome-email", async () => {
+      await sendEmail(email, "Welcome! Get started with these tips.");
+    });
+
+    await context.sleep("initial-wait", 60 * 60 * 24 * 3); // 3 days
+
+    while (true) {
+      const state = await context.run("check-user-state", async () => {
+        const activity = await db.getUserActivity(userId, { days: 30 });
+        if (activity.isPremium) return "premium";
+        if (activity.loginCount > 10) return "active";
+        return "non-active";
+      });
+
+      if (state === "non-active") {
+        await context.run("send-reengagement-email", async () => {
+          await sendEmail(email, "We miss you! Here's 20% off to come back.");
+        });
+      } else if (state === "active") {
+        await context.run("send-newsletter", async () => {
+          await sendEmail(email, "Check out these new features!");
+        });
+      } else if (state === "premium") {
+        await context.run("send-premium-content", async () => {
+          await sendEmail(email, "Exclusive content for premium members.");
+        });
+      }
+
+      await context.sleep("monthly-check", 60 * 60 * 24 * 30); // 30 days
+    }
+  }
+);
+```
+
+### E-commerce order fulfillment with parallel processing
+
+Combines serial and parallel execution for complex multi-step order processing.
+
+```typescript
+import { serve } from "@upstash/workflow/nextjs";
+
+export const { POST } = serve<{ orderId: string; items: any[] }>(
+  async (context) => {
+    const { orderId, items } = context.requestPayload;
+
+    const [inventory, customer] = await Promise.all([
+      context.run("verify-inventory", async () => {
+        const available = await db.inventory.checkAvailability(items);
+        if (!available) throw new Error("Insufficient inventory");
+        return available;
+      }),
+      context.run("fetch-customer-data", async () => {
+        return await db.customers.findByOrderId(orderId);
+      }),
+    ]);
+
+    const payment = await context.run("process-payment", async () => {
+      const charge = await stripe.charges.create({
+        amount: customer.orderTotal,
+        currency: "usd",
+        customer: customer.stripeId,
+      });
+      if (charge.status !== "succeeded") throw new Error("Payment failed");
+      return charge;
+    });
+
+    await context.run("reserve-inventory", async () => {
+      await db.inventory.reserve(items, orderId);
+    });
+
+    const [shipment, invoice, notification] = await Promise.all([
+      context.run("schedule-shipment", async () => {
+        return await logistics.createShipment({
+          orderId,
+          items,
+          address: customer.shippingAddress,
+          priority: customer.isPremium ? "express" : "standard",
+        });
+      }),
+      context.run("generate-invoice", async () => {
+        return await invoiceService.create({
+          orderId,
+          customerId: customer.id,
+          paymentId: payment.id,
+          items,
+        });
+      }),
+      context.run("send-confirmation-email", async () => {
+        await sendEmail(customer.email, "Order confirmed!", {
+          orderId,
+          trackingNumber: "pending",
+          estimatedDelivery: Date.now() + 5 * 24 * 60 * 60 * 1000,
+        });
+      }),
+    ]);
+
+    await context.sleep("wait-for-shipment", 60 * 60 * 2); // 2 hours
+
+    await context.run("update-tracking", async () => {
+      const tracking = await logistics.getTracking(shipment.id);
+      await sendEmail(
+        customer.email,
+        `Your order is on the way! Track: ${tracking.number}`
+      );
+    });
+
+    return {
+      orderId,
+      paymentId: payment.id,
+      shipmentId: shipment.id,
+      invoiceId: invoice.id,
+    };
+  }
+);
+```
+
+## Summary
+
+Upstash Workflow transforms serverless functions into durable, production-grade workflows by providing step-based execution, automatic retries, and state persistence without infrastructure management. Its core methods—`context.run`, `context.sleep`, `context.call`, and event-based coordination—enable developers to build complex long-running processes that survive function timeouts, platform outages, and transient failures.
+
+The framework excels in scenarios requiring reliability and durability: customer lifecycle automation with months-long delays, e-commerce order fulfillment with parallel payment and inventory operations, AI-powered content pipelines with multi-hour processing, payment retry systems with exponential backoff, and approval workflows waiting for external events. Integration patterns include QStash schedules for recurring tasks, Dead Letter Queue management for failure recovery, and client-based workflow orchestration across multiple services. With native support for Next.js, Cloudflare Workers, FastAPI, and other platforms, Upstash Workflow delivers enterprise-grade workflow orchestration for serverless applications.

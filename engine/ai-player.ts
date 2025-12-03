@@ -338,9 +338,42 @@ function validateAction(
         }
       }];
     }
+    
+    // Convert bet action to use args instead of input
+    return [{
+      toolName: "bet",
+      args: {
+        amount: action.input.amount,
+        reasoning: action.input.reasoning
+      }
+    }];
+  }
+  
+  // Handle check action
+  if (action.toolName === "check") {
+    return [{
+      toolName: "check",
+      args: {
+        reasoning: action.input.reasoning
+      }
+    }];
+  }
+  
+  // Handle fold action
+  if (action.toolName === "fold") {
+    return [{
+      toolName: "fold",
+      args: {
+        reasoning: action.input.reasoning
+      }
+    }];
   }
 
-  return [action];
+  // Fallback: convert any remaining action's input to args
+  return [{
+    toolName: action.toolName,
+    args: action.input
+  }];
 }
 
 /**

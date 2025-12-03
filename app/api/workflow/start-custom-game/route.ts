@@ -91,24 +91,19 @@ export const { POST } = serve<CustomGamePayload>(
       });
       
       // Play the round
-      try {
-        await context.run(`perform-round-${roundIndex + 1}`, async () => {
-          await performRound({
-            gameId,
-            players: gamePlayers,
-            deck,
-            roundNumber: roundIndex + 1,
-            buttonPosition,
-            apiKey,
-            provider
-          });
+      await context.run(`perform-round-${roundIndex + 1}`, async () => {
+        await performRound({
+          gameId,
+          players: gamePlayers,
+          deck,
+          roundNumber: roundIndex + 1,
+          buttonPosition,
+          apiKey,
+          provider
         });
-        
-        logger.log(`Round ${roundIndex + 1} completed successfully`);
-      } catch (error) {
-        logger.error(`Error in round ${roundIndex + 1}`, { error: String(error) });
-        // Continue to next round even if one fails
-      }
+      });
+      
+      logger.log(`Round ${roundIndex + 1} completed successfully`);
       
       // Rotate button to next non-empty seat for next round
       buttonPosition = getNextButtonPosition(gamePlayers, buttonPosition, GAME_CONFIG.PLAYER_COUNT);

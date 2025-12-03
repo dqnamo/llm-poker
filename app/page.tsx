@@ -56,7 +56,7 @@ export default function Home() {
   const [models, setModels] = useState<OpenRouterModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [seatSelections, setSeatSelections] = useState<SeatSelection[]>(
-    Array(6).fill(null)
+    Array(6).fill({ type: "empty" } as SeatSelection)
   );
   const [isStartingGame, setIsStartingGame] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
