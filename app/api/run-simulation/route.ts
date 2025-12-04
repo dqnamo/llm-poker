@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Client } from "@upstash/workflow";
 import { id, init } from '@instantdb/admin';
 import { DateTime } from "luxon";
 import type { AIProvider } from '@/engine/ai-player';
@@ -102,34 +103,21 @@ export async function POST(request: NextRequest) {
     );
 
     // Trigger the Upstash Workflow
+    const client = new Client({ token: process.env.QSTASH_TOKEN! });
     const baseUrl = getBaseUrl();
-    const workflowUrl = `${baseUrl}/api/workflow/start-custom-game`;
     
-    // Use raw QStash API to avoid crypto-js dependency issues in @upstash/workflow client
-    // causing "TypeError: Cannot set properties of undefined (setting 'SHA224')" during build
-    const qstashResponse = await fetch(`https://qstash.upstash.io/v2/publish/${workflowUrl}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.QSTASH_TOKEN}`,
-        'Content-Type': 'application/json',
-        'Upstash-Retries': '1'
-      },
-      body: JSON.stringify({
+    const { workflowRunId } = await client.trigger({
+      url: `${baseUrl}/api/workflow/start-custom-game`,
+      body: {
         gameId,
         players,
         startingStack,
         numberOfHands,
         apiKey,
         provider,
-      })
+      },
+      retries: 1,
     });
-
-    if (!qstashResponse.ok) {
-      throw new Error(`Failed to trigger workflow: ${await qstashResponse.text()}`);
-    }
-
-    const { messageId } = await qstashResponse.json();
-    const workflowRunId = messageId;
 
     // Update the game with the workflow run ID
     await db.transact(
